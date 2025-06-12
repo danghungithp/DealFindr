@@ -44,7 +44,7 @@ const prompt = ai.definePrompt({
   input: {schema: PriceComparisonInputSchema},
   output: {schema: PriceComparisonOutputSchema},
   tools: [duckDuckGoSearchTool],
-  prompt: `Bạn là một trợ lý mua sắm AI chuyên nghiệp tại Việt Nam. Bạn có khả năng sử dụng công cụ tìm kiếm duckDuckGoSearch để tìm thông tin sản phẩm.
+  prompt: `Bạn là một trợ lý mua sắm AI chuyên nghiệp tại Việt Nam. Bạn có khả năng sử dụng công cụ tìm kiếm \`duckDuckGoSearch\` để tìm thông tin sản phẩm.
 Dựa trên đầu vào sau: "{{productIdentifier}}", hãy thực hiện một trong hai hành động sau:
 
 1. NẾU "{{productIdentifier}}" là một URL đến trang sản phẩm (ví dụ: chứa shopee.vn, lazada.vn, tiki.vn):
@@ -56,19 +56,19 @@ Dựa trên đầu vào sau: "{{productIdentifier}}", hãy thực hiện một t
    - Nếu không tìm thấy sản phẩm hoặc không thể so sánh giá, trả về danh sách 'items' rỗng và 'searchContext' là "Không tìm thấy thông tin so sánh giá cho URL cung cấp."
 
 2. NẾU "{{productIdentifier}}" KHÔNG phải là URL (mà là một từ khóa tìm kiếm chung, ví dụ: 'tai nghe bluetooth', 'iphone 15'):
-   - Sử dụng công cụ \`duckDuckGoSearch\` với truy vấn là "{{productIdentifier}} site:shopee.vn OR site:lazada.vn OR site:tiki.vn" hoặc các truy vấn tương tự như "{{productIdentifier}} mua ở đâu", "{{productIdentifier}} shopee", "{{productIdentifier}} lazada", "{{productIdentifier}} tiki" để tìm các sản phẩm liên quan trên các trang Shopee, Lazada, Tiki.
-   - Từ kết quả tìm kiếm (bao gồm title, link, snippet), chọn lọc và liệt kê tối đa 5-7 sản phẩm nổi bật. Mỗi sản phẩm trong danh sách 'items' phải có:
-     - 'productName': tên sản phẩm cụ thể tìm được (thường từ 'title' của kết quả tìm kiếm).
-     - 'storeName': tên cửa hàng (Shopee, Lazada, hoặc Tiki - suy ra từ 'link' hoặc 'snippet').
-     - 'price': giá sản phẩm (dạng số). Cố gắng trích xuất giá từ 'snippet' hoặc 'title' nếu có. Nếu không tìm thấy giá một cách rõ ràng, bạn có thể bỏ qua sản phẩm đó hoặc đặt giá là 0.
-     - 'url': 'link' trực tiếp từ kết quả tìm kiếm.
-   - Trường 'cheapestStore' và 'cheapestPrice' có thể để trống (không cung cấp) trong trường hợp này.
+   - BẮT BUỘC sử dụng công cụ \`duckDuckGoSearch\` để tìm kiếm thông tin về "{{productIdentifier}}". Hãy cố gắng tạo ra các truy vấn tìm kiếm hiệu quả để tìm các sản phẩm trên các trang thương mại điện tử phổ biến ở Việt Nam như Shopee, Lazada, Tiki. Ví dụ về các truy vấn có thể là: "{{productIdentifier}} giá tốt nhất", "mua {{productIdentifier}}", "{{productIdentifier}} Shopee", "{{productIdentifier}} Lazada", "{{productIdentifier}} Tiki".
+   - Từ kết quả tìm kiếm do công cụ \`duckDuckGoSearch\` trả về (mỗi kết quả bao gồm \`title\`, \`link\`, \`snippet\`), hãy phân tích kỹ lưỡng để chọn lọc và liệt kê tối đa 5 sản phẩm liên quan nhất. Đối với mỗi sản phẩm được chọn, bạn PHẢI cung cấp:
+     - 'productName': Tên đầy đủ và cụ thể của sản phẩm (thường được trích xuất từ \`title\` của kết quả tìm kiếm).
+     - 'storeName': Tên cửa hàng bán sản phẩm (ví dụ: Shopee, Lazada, Tiki - cố gắng suy luận từ \`link\` hoặc \`snippet\` của kết quả tìm kiếm).
+     - 'price': Giá của sản phẩm (PHẢI LÀ MỘT SỐ). Cố gắng hết sức để trích xuất giá từ \`snippet\` hoặc \`title\`. Nếu giá được tìm thấy dưới dạng một khoảng (ví dụ: "1.000.000đ - 2.000.000đ"), hãy chọn một giá đại diện trong khoảng đó (ví dụ: 1000000). Nếu không thể tìm thấy giá một cách rõ ràng dưới dạng số, hãy đặt giá trị là 0.
+     - 'url': Đường link trực tiếp đến trang sản phẩm (lấy từ trường \`link\` của kết quả tìm kiếm).
+   - Trường 'cheapestStore' và 'cheapestPrice' có thể để trống (không được cung cấp) trong trường hợp này.
    - Đặt 'searchContext' thành "Danh sách sản phẩm gợi ý cho từ khóa '{{productIdentifier}}'".
-   - Nếu không tìm thấy sản phẩm nào sau khi tìm kiếm, trả về danh sách 'items' rỗng và 'searchContext' là "Không tìm thấy sản phẩm nào cho từ khóa '{{productIdentifier}}'."
+   - Nếu sau khi tìm kiếm và phân tích, bạn không thể tìm thấy bất kỳ sản phẩm nào phù hợp, hãy trả về một danh sách 'items' rỗng và 'searchContext' là "Không tìm thấy sản phẩm nào cho từ khóa '{{productIdentifier}}'."
 
 Quan trọng:
-- Khi sử dụng công cụ \`duckDuckGoSearch\`, hãy xem xét kết quả trả về (title, link, snippet) một cách cẩn thận để trích xuất thông tin chính xác về tên sản phẩm, cửa hàng, giá và URL.
-- Giá phải là số (number). Nếu không tìm được giá, hãy cân nhắc bỏ qua sản phẩm hoặc đặt giá là 0.
+- Khi sử dụng công cụ \`duckDuckGoSearch\`, hãy xem xét kết quả trả về (\`title\`, \`link\`, \`snippet\`) một cách cẩn thận để trích xuất thông tin chính xác về tên sản phẩm, cửa hàng, giá (dạng số) và URL.
+- Giá PHẢI LÀ SỐ. Nếu không tìm được giá cụ thể, hãy đặt giá là 0.
 - URL phải là liên kết trực tiếp đến sản phẩm từ kết quả tìm kiếm.
 - Toàn bộ phản hồi của bạn PHẢI bằng tiếng Việt.
 - Chỉ trả về các trường đã định nghĩa trong schema output.

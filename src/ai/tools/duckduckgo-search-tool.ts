@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview DuckDuckGo search tool for Genkit.
@@ -21,9 +22,10 @@ const SearchResultSchema = z.object({
 
 const DuckDuckGoSearchOutputSchema = z.array(SearchResultSchema).describe('A list of search results.');
 
+// Removed safeSearch option to allow for broader results by default.
+// Other options like region or timelimit can be added if needed.
 const DEFAULT_SEARCH_OPTIONS: SearchOptions = {
-  safeSearch: 'Moderate', 
-  // You can add other options like region: 'wt-wt', // Worldwide
+  // region: 'wt-wt', // Worldwide
   // timelimit: 'm', // Past month, 'd' for day, 'w' for week, 'y' for year
 };
 const DEFAULT_MAX_RESULTS = 5; 
@@ -36,6 +38,7 @@ export const duckDuckGoSearchTool = ai.defineTool(
     outputSchema: DuckDuckGoSearchOutputSchema,
   },
   async (input) => {
+    console.log(`DuckDuckGo searching for: "${input.query}" with options:`, DEFAULT_SEARCH_OPTIONS);
     try {
       const { results } = await search(input.query, DEFAULT_SEARCH_OPTIONS);
       
@@ -44,16 +47,21 @@ export const duckDuckGoSearchTool = ai.defineTool(
         return [];
       }
       
-      return results
+      const processedResults = results
         .map((result) => ({
           title: result.title,
           link: result.url,
           snippet: result.description,
         }))
         .slice(0, DEFAULT_MAX_RESULTS);
+      
+      console.log(`DuckDuckGo found ${processedResults.length} results for "${input.query}".`);
+      return processedResults;
+
     } catch (error) {
       console.error('DuckDuckGo search error:', error);
       return []; 
     }
   }
 );
+
