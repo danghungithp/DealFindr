@@ -23,7 +23,7 @@ const PriceComparisonOutputSchema = z.object({
     z.object({
       storeName: z.string().describe('The name of the store.'),
       price: z.number().describe('The price of the product at the store.'),
-      url: z.string().url().describe('The URL to the product page at the store.'),
+      url: z.string().describe('The URL to the product page at the store.'),
     })
   ).describe('A list of prices from different stores.'),
   cheapestStore: z.string().describe('The name of the store with the cheapest price.'),
