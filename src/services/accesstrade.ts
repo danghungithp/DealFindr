@@ -30,6 +30,21 @@ export interface FormattedCoupon {
   end_time: string;
 }
 
+const FREE_SHIPPING_KEYWORDS = [
+  "miễn phí vận chuyển",
+  "freeship",
+  "free ship",
+  "miễn ship",
+  "miễn phí giao hàng",
+  "giao hàng miễn phí",
+  "mpvc"
+];
+
+function isFreeShippingCoupon(coupon: FormattedCoupon): boolean {
+  const searchText = `${coupon.description.toLowerCase()} ${coupon.offer_name.toLowerCase()}`;
+  return FREE_SHIPPING_KEYWORDS.some(keyword => searchText.includes(keyword));
+}
+
 export async function fetchShopeeDiscountCodes(): Promise<FormattedCoupon[]> {
   const apiUrl = 'https://api.accesstrade.vn/v1/offers_informations?domain=shopee.vn';
   const apiToken = process.env.ACCESSTRADE_API_TOKEN;
@@ -62,13 +77,13 @@ export async function fetchShopeeDiscountCodes(): Promise<FormattedCoupon[]> {
       return [];
     }
 
-    const formattedCoupons: FormattedCoupon[] = [];
+    const allFormattedCoupons: FormattedCoupon[] = [];
     parsedData.data.forEach(offer => {
       offer.coupons.forEach(coupon => {
-        formattedCoupons.push({
+        allFormattedCoupons.push({
           code: coupon.coupon_code,
           description: coupon.coupon_desc,
-          aff_link: offer.aff_link, // Using offer's aff_link as coupon specific might not always be available
+          aff_link: offer.aff_link,
           offer_name: offer.name,
           domain: offer.domain,
           end_time: offer.end_time,
@@ -76,9 +91,12 @@ export async function fetchShopeeDiscountCodes(): Promise<FormattedCoupon[]> {
       });
     });
     
-    return formattedCoupons;
+    const freeShippingCoupons = allFormattedCoupons.filter(isFreeShippingCoupon);
+    return freeShippingCoupons;
+
   } catch (error) {
     console.error('Exception during Accesstrade API call:', error);
     return [];
   }
 }
+

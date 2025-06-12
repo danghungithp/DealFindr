@@ -30,9 +30,14 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
 
   const formatDate = (dateString: string) => {
     try {
-      return format(parseISO(dateString), "dd/MM/yyyy", { locale: vi });
+      return format(parseISO(dateString), "dd/MM/yyyy HH:mm", { locale: vi });
     } catch (error) {
-      return "Không rõ";
+      // Handle cases where dateString might be just a date without time
+      try {
+        return format(parseISO(dateString), "dd/MM/yyyy", { locale: vi });
+      } catch (err) {
+        return "Không rõ";
+      }
     }
   };
 
@@ -41,7 +46,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <Ticket className="mr-2 h-6 w-6 text-primary" />
-          Mã Giảm Giá Hiện Có (Shopee)
+          Mã Miễn Phí Vận Chuyển (Shopee)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -98,7 +103,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
         ) : (
           <div className="flex items-center text-muted-foreground p-4 justify-center">
             <Info className="mr-2 h-5 w-5" />
-            <span>Không tìm thấy mã giảm giá nào cho Shopee hiện tại.</span>
+            <span>Không tìm thấy mã miễn phí vận chuyển nào cho Shopee hiện tại.</span>
           </div>
         )}
       </CardContent>
