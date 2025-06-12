@@ -44,6 +44,7 @@ export default function HomePage() {
 
     const isUrl = checkIsValidUrl(searchTerm);
 
+    // For DiscountCodes, productName is passed but currently the flow fetches generic Shopee codes.
     const operations = [
       {
         name: "Social Sentiment",
@@ -54,8 +55,8 @@ export default function HomePage() {
       },
       {
         name: "Discount Codes",
-        name_vi: "Mã giảm giá",
-        fn: () => findDiscountCodes({ productName: searchTerm }),
+        name_vi: "Mã giảm giá (Shopee)",
+        fn: () => findDiscountCodes({ productName: searchTerm }), // searchTerm can be used later if API supports product-specific codes or other domains
         setData: setDiscountCodesData,
         condition: true, 
       },
@@ -88,9 +89,11 @@ export default function HomePage() {
               title: `Lỗi khi lấy ${op.name_vi}`,
               description: e.message || "Đã xảy ra lỗi không mong muốn.",
             });
+            // Ensure data is reset on error for the specific operation
             op.setData(null);
           }
         } else {
+          // If condition is false, ensure data is reset (e.g. product summary for non-URL input)
           op.setData(null); 
         }
       })
@@ -131,26 +134,33 @@ export default function HomePage() {
           </div>
         )}
 
-        {isLoading && !productSearchTerm && ( 
+        {/* This condition seems redundant if the one below handles productSearchTerm presence */}
+        {/* {isLoading && !productSearchTerm && ( 
             <div className="flex justify-center items-center mt-16">
                 <LoadingSpinner size={48} />
             </div>
-        )}
+        )} */}
 
 
         {productSearchTerm && (
           <div className="mt-10 space-y-6">
-            {isLoading && (
+            {isLoading && ( // Show general loading spinner when any data is being fetched for a searched term
                 <div className="flex justify-center items-center py-10">
                     <LoadingSpinner size={48} />
-                    <p className="ml-4 text-lg text-muted-foreground">Đang lấy dữ liệu sản phẩm...</p>
+                    <p className="ml-4 text-lg text-muted-foreground">Đang tổng hợp dữ liệu...</p>
                 </div>
             )}
+            {/* Grid for displaying results once search is initiated and loading might be partial */}
             <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+              {/* Product Summary: show skeleton if URL was valid, attempted, and still loading */}
               <ProductSummarySection data={productSummaryData} isLoading={isLoading && isUrlInput && !productSummaryData} attempted={isUrlInput} />
+              {/* Price Comparison: show skeleton if URL was valid, attempted, and still loading */}
               <PriceComparisonSection data={priceComparisonData} isLoading={isLoading && isUrlInput && !priceComparisonData} attempted={isUrlInput} />
+              {/* Discount Codes: always attempt, show skeleton if loading */}
               <DiscountCodesSection data={discountCodesData} isLoading={isLoading && !discountCodesData} />
+              {/* Social Sentiment: always attempt, show skeleton if loading */}
               <SocialSentimentSection data={socialSentimentData} isLoading={isLoading && !socialSentimentData} />
+              {/* Affiliate Link Section always shows if productSearchTerm is present */}
               <AffiliateLinkSection productNameOrLink={productSearchTerm} />
             </div>
           </div>
@@ -164,3 +174,4 @@ export default function HomePage() {
     </div>
   );
 }
+
