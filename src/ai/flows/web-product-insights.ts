@@ -26,6 +26,14 @@ const KeySourceSchema = z.object({
   snippet: z.string().optional().describe('Mô tả ngắn của nguồn thông tin.'),
 });
 
+const ProductFindingSchema = z.object({
+  title: z.string().describe('Tiêu đề của sản phẩm/trang được tìm thấy.'),
+  url: z.string().url().describe('URL của sản phẩm/trang.'),
+  snippet: z.string().optional().describe('Mô tả ngắn của sản phẩm/trang.'),
+  extractedPrice: z.string().optional().describe('Giá ước tính AI trích xuất được từ snippet hoặc tiêu đề (ví dụ: "1.200.000 đ", "Liên hệ", "Từ 500k"). Nếu không tìm thấy, để trống.'),
+  storeName: z.string().optional().describe('Tên cửa hàng/website được suy ra từ URL (ví dụ: Shopee, Lazada, Tiki, hoặc tên miền khác).'),
+});
+
 const WebProductInsightsOutputSchema = z.object({
   analyzedProductName: z.string().describe('Tên sản phẩm chính được AI xác định từ kết quả tìm kiếm và từ khóa.'),
   overallSummary: z.string().describe('Tóm tắt chung về sản phẩm dựa trên các kết quả tìm kiếm từ web, bằng tiếng Việt.'),
@@ -33,6 +41,7 @@ const WebProductInsightsOutputSchema = z.object({
   negativeMentions: z.array(z.string()).describe('Danh sách các điểm tiêu cực hoặc quan ngại được tìm thấy, bằng tiếng Việt.'),
   discountMentions: z.array(z.string()).describe('Danh sách các đề cập về mã giảm giá hoặc khuyến mãi tìm thấy từ web (mang tính tham khảo), bằng tiếng Việt.'),
   keySources: z.array(KeySourceSchema).describe('Một vài nguồn tin chính từ kết quả tìm kiếm mà AI cho là quan trọng.'),
+  productFindings: z.array(ProductFindingSchema).describe('Danh sách các sản phẩm cụ thể tìm thấy với giá ước tính (tối đa 5-7 mục).'),
   originalSearchQuery: z.string().describe('Từ khóa tìm kiếm gốc của người dùng.')
 });
 export type WebProductInsightsOutput = z.infer<typeof WebProductInsightsOutputSchema>;
@@ -67,10 +76,15 @@ Dựa vào từ khóa tìm kiếm gốc và các kết quả tìm kiếm ở tr�
 3.  **positiveMentions**: Liệt kê 3-5 điểm tích cực, ưu điểm, hoặc nhận xét tốt về sản phẩm/chủ đề. Mỗi điểm là một câu ngắn gọn.
 4.  **negativeMentions**: Liệt kê 3-5 điểm tiêu cực, nhược điểm, hoặc mối quan ngại về sản phẩm/chủ đề. Mỗi điểm là một câu ngắn gọn.
 5.  **discountMentions**: Nếu có bất kỳ đề cập nào về mã giảm giá, chương trình khuyến mãi, hoặc ưu đãi đặc biệt trong các mô tả ngắn, hãy liệt kê chúng. Lưu ý rằng đây chỉ là những đề cập tìm thấy, không đảm bảo tính chính xác hay hiệu lực. Nếu không thấy, ghi rõ "Không tìm thấy đề cập mã giảm giá nào."
-6.  **keySources**: Chọn ra 2-3 kết quả tìm kiếm quan trọng nhất và nhiều thông tin nhất. Với mỗi nguồn, cung cấp lại tiêu đề, URL và mô tả ngắn của nó.
+6.  **keySources**: Chọn ra 2-3 kết quả tìm kiếm quan trọng nhất và nhiều thông tin nhất cho mục đích tham khảo chung. Với mỗi nguồn, cung cấp lại tiêu đề, URL và mô tả ngắn của nó.
+7.  **productFindings**: Từ các kết quả tìm kiếm, chọn ra tối đa 5-7 mục mà bạn cho là trang sản phẩm hoặc có khả năng chứa thông tin giá. Với mỗi mục này:
+    *   Lấy title, url, snippet từ kết quả tìm kiếm tương ứng.
+    *   **extractedPrice**: Cố gắng trích xuất giá từ title hoặc snippet. Giá này có thể là một con số cụ thể (ví dụ: "1.200.000 đ"), một khoảng giá (ví dụ: "1tr - 2tr"), hoặc một thông báo (ví dụ: "Liên hệ", "Giá tốt"). Nếu không tìm thấy giá hoặc không chắc chắn, để trống trường này hoặc ghi "Chưa rõ".
+    *   **storeName**: Suy ra tên cửa hàng từ url (ví dụ: "shopee.vn" -> "Shopee", "lazada.vn" -> "Lazada", "tiki.vn" -> "Tiki"). Nếu không phải trang TMĐT phổ biến, có thể dùng tên miền chính (ví dụ: "dienmayxanh.com").
+    *   Đảm bảo title, url là của trang sản phẩm đó.
 
 Nếu không có kết quả tìm kiếm nào được cung cấp hoặc không thể phân tích, hãy trả về các trường văn bản với nội dung phù hợp để thông báo điều này.
-Ví dụ: analyzedProductName: "Không xác định", overallSummary: "Không có đủ thông tin để phân tích từ kết quả tìm kiếm." , positiveMentions: [], negativeMentions: [], discountMentions: ["Không tìm thấy đề cập mã giảm giá nào."], keySources: [].
+Ví dụ: analyzedProductName: "Không xác định", overallSummary: "Không có đủ thông tin để phân tích từ kết quả tìm kiếm." , positiveMentions: [], negativeMentions: [], discountMentions: ["Không tìm thấy đề cập mã giảm giá nào."], keySources: [], productFindings: [].
 `,
 });
 
@@ -83,18 +97,27 @@ const webProductInsightsFlow = ai.defineFlow(
   async (input): Promise<WebProductInsightsOutput> => {
     console.log(`[webProductInsightsFlow] Received productIdentifier for web search: ${input.productIdentifier}`);
     
-    // Step 1: Perform DuckDuckGo search (no domain restrictions)
     const rawSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({ 
       query: input.productIdentifier 
     });
 
     console.log(`[webProductInsightsFlow] DuckDuckGo returned ${rawSearchResults.length} results.`);
     if (rawSearchResults.length > 0) {
-        rawSearchResults.forEach((r, i) => console.log(`Result ${i}: ${r.title} - ${r.link}`));
+        rawSearchResults.forEach((r, i) => console.log(`[webProductInsightsFlow] Result ${i}: ${r.title} - ${r.link}`));
+    } else {
+      console.log('[webProductInsightsFlow] No results from DuckDuckGo.');
+       return {
+        analyzedProductName: "Không xác định",
+        overallSummary: "Không tìm thấy kết quả nào từ web cho tìm kiếm này.",
+        positiveMentions: [],
+        negativeMentions: [],
+        discountMentions: [],
+        keySources: [],
+        productFindings: [],
+        originalSearchQuery: input.productIdentifier,
+      };
     }
 
-
-    // Step 2: Pass search results to AI for analysis
     try {
       const {output} = await analyzeWebResultsPrompt({
         productIdentifier: input.productIdentifier,
@@ -108,23 +131,29 @@ const webProductInsightsFlow = ai.defineFlow(
           overallSummary: "AI không thể phân tích kết quả tìm kiếm.",
           positiveMentions: [],
           negativeMentions: [],
-          discountMentions: ["Không tìm thấy đề cập mã giảm giá nào."],
+          discountMentions: [],
           keySources: [],
+          productFindings: [],
           originalSearchQuery: input.productIdentifier,
         };
       }
-      console.log('[webProductInsightsFlow] AI analysis successful.');
+      console.log('[webProductInsightsFlow] AI analysis successful. Product findings count:', output.productFindings?.length);
       return { ...output, originalSearchQuery: input.productIdentifier };
 
     } catch (error) {
       console.error('[webProductInsightsFlow] Error during AI analysis:', error);
+      let errorMessage = "Đã xảy ra lỗi trong quá trình AI phân tích kết quả tìm kiếm.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       return {
         analyzedProductName: "Lỗi phân tích",
-        overallSummary: "Đã xảy ra lỗi trong quá trình AI phân tích kết quả tìm kiếm.",
+        overallSummary: `Lỗi AI: ${errorMessage}`,
         positiveMentions: [],
         negativeMentions: [],
         discountMentions: [],
         keySources: [],
+        productFindings: [],
         originalSearchQuery: input.productIdentifier,
       };
     }
