@@ -12,7 +12,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { duckDuckGoSearchTool, type DuckDuckGoSearchOutput } from '@/ai/tools/duckduckgo-search-tool';
+import { duckDuckGoSearchTool, type DuckDuckGoSearchOutput, type DuckDuckGoSearchResult } from '@/ai/tools/duckduckgo-search-tool';
 
 const PriceComparisonInputSchema = z.object({
   productIdentifier: z
@@ -42,32 +42,39 @@ export async function priceComparison(input: PriceComparisonInput): Promise<Pric
 
 const TARGET_ECOMMERCE_DOMAINS = ['shopee.vn', 'lazada.vn', 'tiki.vn'];
 
+// Simplified schema for search results passed to the AI prompt
+const AIInputSearchResultSchema = z.object({
+  title: z.string(),
+  link: z.string().url(),
+  snippet: z.string().optional(),
+});
+
 const priceAnalysisPrompt = ai.definePrompt({
   name: 'priceAnalysisPrompt',
-  input: { schema: z.object({ productIdentifier: z.string(), searchResults: z.array(ProductPriceInfoSchema.pick({ title: true, link: true, snippet: true }).extend({link: z.string()}).transform(val => ({...val, url: val.link}))) }) },
+  input: { schema: z.object({ productIdentifier: z.string(), searchResults: z.array(AIInputSearchResultSchema) }) },
   output: { schema: z.object({ items: z.array(ProductPriceInfoSchema) }) },
-  prompt: `Bạn là một trợ lý AI chuyên trích xuất thông tin sản phẩm từ kết quả tìm kiếm web.
-Từ khóa tìm kiếm là: "{{productIdentifier}}".
-Dưới đây là danh sách các kết quả tìm kiếm được lấy từ Shopee, Lazada, và Tiki:
+  prompt: `Bạn là một trợ lý AI chuyên trích xuất thông tin sản phẩm từ kết quả tìm kiếm web trên các trang thương mại điện tử Việt Nam.
+Từ khóa tìm kiếm gốc của người dùng là: "{{productIdentifier}}".
+Dưới đây là danh sách các kết quả tìm kiếm được lấy từ Shopee, Lazada, và Tiki thông qua công cụ tìm kiếm:
 
 {{#each searchResults}}
 Kết quả số {{@index}}:
 Tiêu đề: {{{this.title}}}
 Link: {{{this.link}}}
-Mô tả: {{{this.snippet}}}
+Mô tả (Snippet): {{{this.snippet}}}
 --------------------
 {{/each}}
 
-Nhiệm vụ của bạn là xem xét TỪNG kết quả tìm kiếm và trích xuất thông tin sản phẩm nếu nó liên quan đến từ khóa "{{productIdentifier}}".
+Nhiệm vụ của bạn là xem xét TỪNG kết quả tìm kiếm và trích xuất thông tin sản phẩm NẾU nó liên quan đến từ khóa "{{productIdentifier}}".
 Đối với MỖI sản phẩm liên quan bạn tìm thấy từ danh sách trên, hãy cung cấp:
-1.  \`productName\`: Tên sản phẩm đầy đủ, lấy từ Tiêu đề hoặc Mô tả.
+1.  \`productName\`: Tên sản phẩm đầy đủ, lấy từ Tiêu đề hoặc Mô tả. Cố gắng làm cho nó súc tích nhưng đầy đủ.
 2.  \`storeName\`: Tên trang web (ví dụ: "Shopee", "Lazada", "Tiki"). Suy ra từ tên miền trong Link. Ví dụ nếu link chứa "shopee.vn" thì storeName là "Shopee".
-3.  \`price\`: Giá sản phẩm. Đây PHẢI LÀ MỘT SỐ (integer or float). Hãy cố gắng hết sức để tìm một con số cụ thể cho giá trong Tiêu đề hoặc Mô tả. Ví dụ: "Giá 150.000đ" -> 150000. Nếu giá được viết dạng "100k", hãy chuyển thành 100000. Nếu là một khoảng giá (ví dụ: "100.000 - 200.000"), hãy lấy giá trị thấp nhất. Nếu không tìm thấy giá số cụ thể, hoặc giá là "Liên hệ", "Miễn phí", hãy đặt giá trị là 0.
+3.  \`price\`: Giá sản phẩm. Đây PHẢI LÀ MỘT SỐ (integer hoặc float). Hãy cố gắng hết sức để tìm một con số cụ thể cho giá trong Tiêu đề hoặc Mô tả. Ví dụ: "Giá 150.000đ" -> 150000. Nếu giá được viết dạng "100k", hãy chuyển thành 100000. Nếu là một khoảng giá (ví dụ: "100.000 - 200.000"), hãy lấy giá trị thấp nhất. Nếu không tìm thấy giá số cụ thể, hoặc giá là "Liên hệ", "Miễn phí", "Giá tốt", hãy đặt giá trị là 0.
 4.  \`url\`: Chính là trường Link của kết quả tìm kiếm.
-5.  \`snippet\`: Chính là trường Mô tả của kết quả tìm kiếm.
+5.  \`snippet\`: Chính là trường Mô tả (Snippet) của kết quả tìm kiếm.
 
 Hãy tạo một danh sách các đối tượng, mỗi đối tượng tương ứng với một sản phẩm bạn trích xuất được.
-Nếu không có kết quả tìm kiếm nào phù hợp hoặc không thể trích xuất thông tin, hãy trả về một danh sách rỗng.
+Nếu không có kết quả tìm kiếm nào phù hợp hoặc không thể trích xuất thông tin, hãy trả về một danh sách rỗng cho trường \`items\`.
 Toàn bộ phản hồi của bạn PHẢI bằng tiếng Việt.
 `,
 });
@@ -86,34 +93,37 @@ const priceComparisonFlow = ai.defineFlow(
       domains: TARGET_ECOMMERCE_DOMAINS 
     });
 
-    console.log(`[priceComparisonFlow] DuckDuckGo returned ${rawSearchResults.length} results.`);
+    console.log(`[priceComparisonFlow] DuckDuckGo returned ${rawSearchResults.length} results.`, rawSearchResults);
 
     if (rawSearchResults.length === 0) {
       return {
         items: [],
-        searchContext: `Không tìm thấy kết quả nào cho "${input.productIdentifier}" trên Shopee, Lazada, Tiki.`,
+        searchContext: `Không tìm thấy kết quả nào cho "${input.productIdentifier}" trên Shopee, Lazada, Tiki bằng công cụ tìm kiếm.`,
       };
     }
-
-    // Prepare search results for the AI prompt
-    const searchResultsForAI = rawSearchResults.map(r => ({
+    
+    // Prepare search results for the AI prompt, ensuring they match AIInputSearchResultSchema
+    const searchResultsForAI: z.infer<typeof AIInputSearchResultSchema>[] = rawSearchResults.map(r => ({
         title: r.title,
-        link: r.link,
+        link: r.link, // duckDuckGoSearchTool returns 'link' which is a URL string
         snippet: r.snippet
     }));
+
+    console.log('[priceComparisonFlow] Input for AI prompt:', { productIdentifier: input.productIdentifier, searchResults: searchResultsForAI });
 
     try {
       const { output } = await priceAnalysisPrompt({ 
         productIdentifier: input.productIdentifier,
-        // @ts-ignore TODO: fix type error, the transform in the schema definition should handle this
         searchResults: searchResultsForAI
       });
+      
+      console.log('[priceComparisonFlow] Output from AI:', output);
 
       if (!output || !output.items) {
-        console.warn('[priceComparisonFlow] AI did not return items.');
+        console.warn('[priceComparisonFlow] AI did not return items or output was null.');
         return {
           items: [],
-          searchContext: `Không thể phân tích kết quả tìm kiếm cho "${input.productIdentifier}" từ Shopee, Lazada, Tiki.`,
+          searchContext: `Không thể phân tích kết quả tìm kiếm cho "${input.productIdentifier}" từ Shopee, Lazada, Tiki. AI không trả về dữ liệu.`,
         };
       }
       
@@ -124,7 +134,7 @@ const priceComparisonFlow = ai.defineFlow(
       };
     } catch (error) {
       console.error('[priceComparisonFlow] Error calling AI for price analysis:', error);
-      // Fallback to showing raw search results if AI fails
+      // Fallback to showing raw search results (unprocessed by AI) if AI fails
        const fallbackItems: ProductPriceInfo[] = rawSearchResults.map(result => {
         let storeName = 'Không rõ';
         try {
@@ -149,3 +159,4 @@ const priceComparisonFlow = ai.defineFlow(
     }
   }
 );
+
