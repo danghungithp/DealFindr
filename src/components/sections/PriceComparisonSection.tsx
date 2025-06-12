@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { PriceComparisonOutput } from "@/ai/flows/price-comparison";
@@ -15,6 +16,10 @@ interface PriceComparisonSectionProps {
 
 export function PriceComparisonSection({ data, isLoading, attempted }: PriceComparisonSectionProps) {
   if (!attempted && !data) return null;
+
+  const affiliatePrefix = "https://go.isclix.com/deep_link/4725587962428837650";
+  const utmParameters = "utm_source=<utm_source>&utm_medium=<utm_medium>&utm_campaign=<utm_campaign>&utm_content=<utm_content>";
+  const sub4Parameter = "sub4=oneatweb";
 
   return (
     <Card className="shadow-lg">
@@ -53,19 +58,23 @@ export function PriceComparisonSection({ data, isLoading, attempted }: PriceComp
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.prices.map((item, index) => (
-                  <TableRow key={index} className={item.storeName === data.cheapestStore ? "bg-primary/5" : ""}>
-                    <TableCell className="font-medium">{item.storeName}</TableCell>
-                    <TableCell>${item.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Button variant="link" size="sm" asChild className="p-0 h-auto text-primary hover:text-primary/80">
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Xem sản phẩm tại ${item.storeName}`}>
-                          Đến Cửa Hàng <ExternalLink className="ml-1 h-3 w-3" />
-                        </a>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {data.prices.map((item, index) => {
+                  const productUrl = item.url;
+                  const purchaseLink = `${affiliatePrefix}?url=${encodeURIComponent(productUrl)}&${utmParameters}&${sub4Parameter}`;
+                  return (
+                    <TableRow key={index} className={item.storeName === data.cheapestStore ? "bg-primary/5" : ""}>
+                      <TableCell className="font-medium">{item.storeName}</TableCell>
+                      <TableCell>${item.price.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Button variant="link" size="sm" asChild className="p-0 h-auto text-primary hover:text-primary/80">
+                          <a href={purchaseLink} target="_blank" rel="noopener noreferrer" aria-label={`Xem sản phẩm tại ${item.storeName}`}>
+                            Đến Cửa Hàng <ExternalLink className="ml-1 h-3 w-3" />
+                          </a>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </>
