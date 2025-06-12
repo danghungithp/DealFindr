@@ -47,11 +47,15 @@ export const duckDuckGoSearchTool = ai.defineTool(
     console.log(`DuckDuckGo searching for: "${searchQuery}"`);
 
     try {
-      const searchOptions: SearchOptions | undefined = undefined; // Use library defaults
+      const searchOptions: SearchOptions = { 
+        region: 'vn-vi' // Specify region for Vietnam (Vietnamese)
+      };
       const searchResponse: DuckDuckGoAPISearchResults = await search(searchQuery, searchOptions);
 
+      // console.log('[duckDuckGoSearchTool] Full searchResponse:', JSON.stringify(searchResponse, null, 2)); // For deeper debugging
+
       if (searchResponse.noResults || !searchResponse.results || searchResponse.results.length === 0) {
-        console.log(`DuckDuckGo search for "${searchQuery}" returned no actual results or indicated noResults=true.`);
+        console.log(`DuckDuckGo search for "${searchQuery}" returned no actual results or indicated noResults=true. Response object:`, searchResponse);
         return [];
       }
 
@@ -63,7 +67,7 @@ export const duckDuckGoSearchTool = ai.defineTool(
         }))
         .slice(0, DEFAULT_MAX_RESULTS);
 
-      console.log(`DuckDuckGo found ${processedResults.length} results for "${searchQuery}". First result title (if any): ${processedResults.length > 0 ? processedResults[0].title : 'N/A'}`);
+      console.log(`DuckDuckGo found ${processedResults.length} raw results from library for "${searchQuery}". Sliced to ${DEFAULT_MAX_RESULTS}. First result title (if any): ${processedResults.length > 0 ? processedResults[0].title : 'N/A'}`);
       return processedResults;
 
     } catch (error: any) {
@@ -72,3 +76,4 @@ export const duckDuckGoSearchTool = ai.defineTool(
     }
   }
 );
+
