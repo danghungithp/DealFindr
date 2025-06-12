@@ -8,18 +8,18 @@ import { FileText, Info } from "lucide-react";
 interface ProductSummarySectionProps {
   data: ProductSummaryOutput | null;
   isLoading: boolean;
-  attempted: boolean; // True if a search was made that could yield this data
+  attempted: boolean; 
 }
 
 export function ProductSummarySection({ data, isLoading, attempted }: ProductSummarySectionProps) {
-  if (!attempted && !data) return null; // Don't render if not applicable (e.g. non-URL input)
+  if (!attempted && !data) return null; 
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <FileText className="mr-2 h-6 w-6 text-primary" />
-          Product Summary
+          Tóm Tắt Sản Phẩm
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -34,7 +34,7 @@ export function ProductSummarySection({ data, isLoading, attempted }: ProductSum
         ) : (
           <div className="flex items-center text-muted-foreground">
             <Info className="mr-2 h-5 w-5" />
-            <span>{attempted ? "No summary available for this product or input." : "Provide a product link to see summary."}</span>
+            <span>{attempted ? "Không có tóm tắt cho sản phẩm hoặc đầu vào này." : "Cung cấp liên kết sản phẩm để xem tóm tắt."}</span>
           </div>
         )}
       </CardContent>

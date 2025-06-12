@@ -4,7 +4,6 @@ import type { PriceComparisonOutput } from "@/ai/flows/price-comparison";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tag, Store, ExternalLink, TrendingDown, Info } from "lucide-react";
 
@@ -22,7 +21,7 @@ export function PriceComparisonSection({ data, isLoading, attempted }: PriceComp
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <Tag className="mr-2 h-6 w-6 text-primary" />
-          Price Comparison
+          So Sánh Giá
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -38,19 +37,19 @@ export function PriceComparisonSection({ data, isLoading, attempted }: PriceComp
               <div className="mb-4 p-3 bg-primary/10 rounded-md border border-primary/30">
                 <h3 className="text-lg font-semibold flex items-center text-primary">
                   <TrendingDown className="mr-2 h-5 w-5" />
-                  Cheapest Deal
+                  Ưu Đãi Tốt Nhất
                 </h3>
                 <p className="text-foreground">
-                  <strong>{data.cheapestStore}</strong> at <strong>${data.cheapestPrice?.toFixed(2)}</strong>
+                  <strong>{data.cheapestStore}</strong> với giá <strong>${data.cheapestPrice?.toFixed(2)}</strong>
                 </p>
               </div>
             )}
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead><Store className="inline-block mr-1 h-4 w-4" />Store</TableHead>
-                  <TableHead><Tag className="inline-block mr-1 h-4 w-4" />Price</TableHead>
-                  <TableHead>Link</TableHead>
+                  <TableHead><Store className="inline-block mr-1 h-4 w-4" />Cửa Hàng</TableHead>
+                  <TableHead><Tag className="inline-block mr-1 h-4 w-4" />Giá</TableHead>
+                  <TableHead>Liên Kết</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -60,8 +59,8 @@ export function PriceComparisonSection({ data, isLoading, attempted }: PriceComp
                     <TableCell>${item.price.toFixed(2)}</TableCell>
                     <TableCell>
                       <Button variant="link" size="sm" asChild className="p-0 h-auto text-primary hover:text-primary/80">
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`View product at ${item.storeName}`}>
-                          Visit Store <ExternalLink className="ml-1 h-3 w-3" />
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Xem sản phẩm tại ${item.storeName}`}>
+                          Đến Cửa Hàng <ExternalLink className="ml-1 h-3 w-3" />
                         </a>
                       </Button>
                     </TableCell>
@@ -73,7 +72,7 @@ export function PriceComparisonSection({ data, isLoading, attempted }: PriceComp
         ) : (
           <div className="flex items-center text-muted-foreground">
             <Info className="mr-2 h-5 w-5" />
-            <span>{attempted ? "No price comparison data available." : "Provide a product link for price comparison."}</span>
+            <span>{attempted ? "Không có dữ liệu so sánh giá." : "Cung cấp liên kết sản phẩm để so sánh giá."}</span>
           </div>
         )}
       </CardContent>

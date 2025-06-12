@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
 export const metadata: Metadata = {
-  title: 'DealFindr - Smart Shopping Assistant',
-  description: 'Find the best deals, product insights, and discounts with DealFindr.',
+  title: 'DealFindr - Trợ lý mua sắm thông minh',
+  description: 'Tìm kiếm ưu đãi tốt nhất, thông tin chi tiết sản phẩm và mã giảm giá với DealFindr.',
 };
 
 export default function RootLayout({

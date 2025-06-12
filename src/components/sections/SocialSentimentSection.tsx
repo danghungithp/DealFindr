@@ -16,7 +16,7 @@ export function SocialSentimentSection({ data, isLoading }: SocialSentimentSecti
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <MessageCircle className="mr-2 h-6 w-6 text-primary" />
-          Social Buzz
+          Xu Hướng Mạng Xã Hội
         </CardTitle>
         {data?.sentimentSummary && !isLoading && (
             <CardDescription>{data.sentimentSummary}</CardDescription>
@@ -41,13 +41,13 @@ export function SocialSentimentSection({ data, isLoading }: SocialSentimentSecti
         ) : data ? (
           <>
             {data.sentimentSummary && !data.positiveHighlights && !data.negativeHighlights && (
-                 <p className="text-foreground/90 whitespace-pre-line">{data.sentimentSummary}</p> /* Show summary if other parts are empty */
+                 <p className="text-foreground/90 whitespace-pre-line">{data.sentimentSummary}</p>
             )}
             {data.positiveHighlights && (
               <div>
                 <h3 className="font-semibold flex items-center text-green-400 mb-1">
                   <ThumbsUp className="mr-2 h-5 w-5" />
-                  Positive Feedback
+                  Phản Hồi Tích Cực
                 </h3>
                 <p className="text-sm text-foreground/80 whitespace-pre-line">{data.positiveHighlights}</p>
               </div>
@@ -56,7 +56,7 @@ export function SocialSentimentSection({ data, isLoading }: SocialSentimentSecti
               <div>
                 <h3 className="font-semibold flex items-center text-red-400 mb-1">
                   <ThumbsDown className="mr-2 h-5 w-5" />
-                  Negative Feedback
+                  Phản Hồi Tiêu Cực
                 </h3>
                 <p className="text-sm text-foreground/80 whitespace-pre-line">{data.negativeHighlights}</p>
               </div>
@@ -64,14 +64,14 @@ export function SocialSentimentSection({ data, isLoading }: SocialSentimentSecti
             {!data.sentimentSummary && !data.positiveHighlights && !data.negativeHighlights && (
                  <div className="flex items-center text-muted-foreground">
                     <Info className="mr-2 h-5 w-5" />
-                    <span>No social sentiment data available.</span>
+                    <span>Không có dữ liệu đánh giá từ cộng đồng cho sản phẩm này.</span>
                  </div>
             )}
           </>
         ) : (
           <div className="flex items-center text-muted-foreground">
             <Info className="mr-2 h-5 w-5" />
-            <span>No social sentiment data available for this product.</span>
+            <span>Không có dữ liệu đánh giá từ cộng đồng cho sản phẩm này.</span>
           </div>
         )}
       </CardContent>

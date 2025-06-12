@@ -25,22 +25,19 @@ export function AffiliateLinkSection({ productNameOrLink }: AffiliateLinkSection
       targetShopeeUrl = productNameOrLink;
       buttonText = "Mua trên Shopee (Ủng hộ DealFindr!)";
     } else {
-      // For other URLs, create a search link on Shopee
-      // Extract a cleaner name: remove query params, common web extensions, replace hyphens/underscores with spaces
       const generalUrlParts = productNameOrLink.split('/');
       const lastPart = generalUrlParts[generalUrlParts.length - 1] || "product";
       const cleanedName = lastPart.split('?')[0]
                                  .replace(/\.(html|php|aspx?|jsp|asp)$/i, '')
                                  .replace(/[-_]/g, ' ')
-                                 .replace(/\s+/g, ' ') // Normalize multiple spaces
-                                 .substring(0, 70) // Limit length
+                                 .replace(/\s+/g, ' ') 
+                                 .substring(0, 70) 
                                  .trim();
-      const extractedName = cleanedName || "product";
+      const extractedName = cleanedName || "sản phẩm";
       targetShopeeUrl = `https://shopee.vn/search?keyword=${encodeURIComponent(extractedName)}`;
       buttonText = `Tìm "${extractedName}" trên Shopee (Ủng hộ DealFindr!)`;
     }
   } else {
-    // If it's a product name
     const cleanedProductName = productNameOrLink.replace(/\s+/g, ' ').trim().substring(0, 70);
     targetShopeeUrl = `https://shopee.vn/search?keyword=${encodeURIComponent(cleanedProductName)}`;
     buttonText = `Tìm "${cleanedProductName}" trên Shopee (Ủng hộ DealFindr!)`;
@@ -49,7 +46,7 @@ export function AffiliateLinkSection({ productNameOrLink }: AffiliateLinkSection
   const purchaseLink = `${affiliatePrefix}?url=${encodeURIComponent(targetShopeeUrl)}&${utmParameters}&${sub4Parameter}`;
 
   return (
-    <Card className="shadow-lg lg:col-span-2 bg-primary/10 border-primary/30"> {/* Spans 2 columns on lg screens */}
+    <Card className="shadow-lg lg:col-span-2 bg-primary/10 border-primary/30">
       <CardHeader>
         <CardTitle className="flex items-center text-xl text-primary">
           <ShoppingCart className="mr-2 h-6 w-6" />

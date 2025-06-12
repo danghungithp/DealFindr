@@ -18,8 +18,8 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
     toast({
-      title: "Copied!",
-      description: `Discount code "${code}" copied to clipboard.`,
+      title: "Đã sao chép!",
+      description: `Mã giảm giá "${code}" đã được sao chép vào bộ nhớ tạm.`,
     });
   };
   
@@ -28,7 +28,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <Ticket className="mr-2 h-6 w-6 text-primary" />
-          Discount Codes
+          Mã Giảm Giá
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -51,7 +51,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
         ) : (
           <div className="flex items-center text-muted-foreground">
             <Info className="mr-2 h-5 w-5" />
-            <span>No discount codes found for this product.</span>
+            <span>Không tìm thấy mã giảm giá nào cho sản phẩm này.</span>
           </div>
         )}
       </CardContent>
