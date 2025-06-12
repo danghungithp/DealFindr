@@ -1,5 +1,4 @@
 
-'use server';
 /**
  * @fileOverview DuckDuckGo search tool for Genkit.
  *
@@ -18,12 +17,12 @@ export type DuckDuckGoSearchInput = z.infer<typeof DuckDuckGoSearchInputSchema>;
 
 const SearchResultSchema = z.object({
   title: z.string().describe('The title of the search result.'),
-  link: z.string().describe('The URL of the search result.'),
+  link: z.string().url().describe('The URL of the search result.'),
   snippet: z.string().describe('A brief snippet or description of the search result.'),
 });
 export type DuckDuckGoSearchResult = z.infer<typeof SearchResultSchema>;
 
-const DuckDuckGoSearchOutputSchema = z.array(SearchResultSchema).describe('A list of search results.');
+export const DuckDuckGoSearchOutputSchema = z.array(SearchResultSchema).describe('A list of search results.');
 export type DuckDuckGoSearchOutput = z.infer<typeof DuckDuckGoSearchOutputSchema>;
 
 

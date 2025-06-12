@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { PriceComparisonOutput } from "@/ai/flows/price-comparison";
+import type { PriceComparisonOutput } from "@/ai/flows/price-comparison"; // This flow is deprecated
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ interface PriceComparisonSectionProps {
   isLoading: boolean;
 }
 
+// This component is deprecated and will be replaced by WebProductInsightsSection.
 export function PriceComparisonSection({ data, isLoading }: PriceComparisonSectionProps) {
   const affiliatePrefix = "https://go.isclix.com/deep_link/4725587962428837650";
   const utmParameters = "utm_source=<utm_source>&utm_medium=<utm_medium>&utm_campaign=<utm_campaign>&utm_content=<utm_content>";
@@ -20,12 +21,17 @@ export function PriceComparisonSection({ data, isLoading }: PriceComparisonSecti
 
   const hasData = data?.items && data.items.length > 0;
 
+  if (isLoading || hasData) { // Only render if loading or has data to show it's being phased out
+     // console.warn("[PriceComparisonSection DEPRECATED] This component is deprecated. Use WebProductInsightsSection instead.");
+  }
+
+
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg hidden"> {/* Hidden by default as it's deprecated */}
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <Tag className="mr-2 h-6 w-6 text-primary" />
-          Kết Quả Tìm Kiếm Sản Phẩm
+          Kết Quả Tìm Kiếm Sản Phẩm (Cũ)
         </CardTitle>
         {data?.searchContext && !isLoading && (
           <CardDescription>{data.searchContext}</CardDescription>
@@ -69,7 +75,7 @@ export function PriceComparisonSection({ data, isLoading }: PriceComparisonSecti
                     <TableCell className="align-top">
                       {item.price > 0 ? item.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : "Không rõ"}
                       {item.price === 0 && (
-                        <p className="text-xs text-muted-foreground">(Chưa trích xuất được)</p>
+                        <p className="text-xs text-muted-foreground">(Giá không có sẵn)</p>
                       )}
                     </TableCell>
                     <TableCell className="align-top">

@@ -4,7 +4,8 @@
 import { useState } from "react";
 import { ProductSearchForm } from "@/components/ProductSearchForm";
 import { ProductSummarySection } from "@/components/sections/ProductSummarySection";
-import { PriceComparisonSection } from "@/components/sections/PriceComparisonSection";
+// import { PriceComparisonSection } from "@/components/sections/PriceComparisonSection"; // Old import
+import { WebProductInsightsSection } from "@/components/sections/WebProductInsightsSection"; // New import
 import { DiscountCodesSection } from "@/components/sections/DiscountCodesSection";
 import { SocialSentimentSection } from "@/components/sections/SocialSentimentSection";
 import { AffiliateLinkSection } from "@/components/sections/AffiliateLinkSection";
@@ -12,7 +13,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { analyzeSocialSentiment, type SocialSentimentOutput } from "@/ai/flows/social-sentiment-analysis";
-import { priceComparison, type PriceComparisonOutput } from "@/ai/flows/price-comparison";
+// import { priceComparison, type PriceComparisonOutput } from "@/ai/flows/price-comparison"; // Old import
+import { fetchWebProductInsights, type WebProductInsightsOutput } from "@/ai/flows/web-product-insights"; // New import
 import { summarizeProduct, type ProductSummaryOutput } from "@/ai/flows/product-summarization";
 import { findDiscountCodes, type FindDiscountCodesOutput } from "@/ai/flows/discount-hunter";
 
@@ -26,7 +28,8 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [priceComparisonData, setPriceComparisonData] = useState<PriceComparisonOutput | null>(null);
+  // const [priceComparisonData, setPriceComparisonData] = useState<PriceComparisonOutput | null>(null); // Old state
+  const [webProductInsightsData, setWebProductInsightsData] = useState<WebProductInsightsOutput | null>(null); // New state
   const [productSummaryData, setProductSummaryData] = useState<ProductSummaryOutput | null>(null);
   const [discountCodesData, setDiscountCodesData] = useState<FindDiscountCodesOutput | null>(null);
   const [socialSentimentData, setSocialSentimentData] = useState<SocialSentimentOutput | null>(null);
@@ -37,7 +40,8 @@ export default function HomePage() {
     setProductSearchTerm(searchTerm);
     setIsLoading(true);
     setError(null);
-    setPriceComparisonData(null);
+    // setPriceComparisonData(null); // Clear old state
+    setWebProductInsightsData(null); // Clear new state
     setProductSummaryData(null);
     setDiscountCodesData(null);
     setSocialSentimentData(null);
@@ -61,17 +65,17 @@ export default function HomePage() {
       },
       {
         name: "Product Summary",
-        name_vi: "Tóm tắt sản phẩm",
+        name_vi: "Tóm tắt sản phẩm (từ URL)",
         fn: () => summarizeProduct({ productUrl: searchTerm }),
         setData: setProductSummaryData,
-        condition: isUrl, // Product summary only makes sense for URLs
+        condition: isUrl, 
       },
       {
-        name: "Price Comparison/Listing", // Name updated for clarity
-        name_vi: "So sánh giá / Gợi ý sản phẩm",
-        fn: () => priceComparison({ productIdentifier: searchTerm }), // Use productIdentifier
-        setData: setPriceComparisonData,
-        condition: true, // Always attempt price comparison or product listing
+        name: "Web Product Insights", // Updated name
+        name_vi: "Phân tích thông tin từ Web", // Updated name_vi
+        fn: () => fetchWebProductInsights({ productIdentifier: searchTerm }), 
+        setData: setWebProductInsightsData, // Use new setData
+        condition: true, 
       },
     ];
 
@@ -141,7 +145,8 @@ export default function HomePage() {
             )}
             <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
               <ProductSummarySection data={productSummaryData} isLoading={isLoading && isUrlInput && !productSummaryData} attempted={isUrlInput} />
-              <PriceComparisonSection data={priceComparisonData} isLoading={isLoading && !priceComparisonData} />
+              {/* <PriceComparisonSection data={priceComparisonData} isLoading={isLoading && !priceComparisonData} /> Old component */}
+              <WebProductInsightsSection data={webProductInsightsData} isLoading={isLoading && !webProductInsightsData} /> {/* New component */}
               <DiscountCodesSection data={discountCodesData} isLoading={isLoading && !discountCodesData} />
               <SocialSentimentSection data={socialSentimentData} isLoading={isLoading && !socialSentimentData} />
               <AffiliateLinkSection productNameOrLink={productSearchTerm} />
@@ -157,4 +162,3 @@ export default function HomePage() {
     </div>
   );
 }
-

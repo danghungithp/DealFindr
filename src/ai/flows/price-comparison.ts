@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview A product listing utility using DuckDuckGo search.
+ * This file is deprecated and will be removed. Use web-product-insights.ts instead.
  *
  * - priceComparison - A function that lists products for a search keyword
  *   from the web using DuckDuckGo.
@@ -37,6 +38,8 @@ const PriceComparisonOutputSchema = z.object({
 export type PriceComparisonOutput = z.infer<typeof PriceComparisonOutputSchema>;
 
 export async function priceComparison(input: PriceComparisonInput): Promise<PriceComparisonOutput> {
+  // This flow is being deprecated in favor of webProductInsightsFlow
+  console.warn("[priceComparisonFlow DEPRECATED] This flow is deprecated. Use webProductInsightsFlow instead.");
   return priceComparisonFlow(input);
 }
 
@@ -47,19 +50,19 @@ const priceComparisonFlow = ai.defineFlow(
     outputSchema: PriceComparisonOutputSchema,
   },
   async (input): Promise<PriceComparisonOutput> => {
-    console.log(`[priceComparisonFlow] Received productIdentifier for web search: ${input.productIdentifier}`);
+    console.log(`[priceComparisonFlow DEPRECATED] Received productIdentifier for web search: ${input.productIdentifier}`);
     
-    // Call DuckDuckGo search without domain restrictions
     const rawSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({ 
-      query: input.productIdentifier 
+      query: input.productIdentifier
+      // No domain restrictions
     });
 
-    console.log(`[priceComparisonFlow] DuckDuckGo returned ${rawSearchResults.length} results from web search.`);
+    console.log(`[priceComparisonFlow DEPRECATED] DuckDuckGo returned ${rawSearchResults.length} results from web search.`);
 
     if (rawSearchResults.length === 0) {
       return {
         items: [],
-        searchContext: `Không tìm thấy kết quả nào cho "${input.productIdentifier}" trên web.`,
+        searchContext: `Không tìm thấy kết quả nào trên web cho "${input.productIdentifier}". (Luồng này đã cũ)`,
       };
     }
     
@@ -67,33 +70,23 @@ const priceComparisonFlow = ai.defineFlow(
       let storeName = 'Không rõ';
       try {
         const urlObj = new URL(result.link);
-        const hostname = urlObj.hostname.toLowerCase();
-        // Basic store name inference, can be expanded
-        if (hostname.includes('shopee.vn')) {
-            storeName = 'Shopee';
-        } else if (hostname.includes('lazada.vn')) {
-            storeName = 'Lazada';
-        } else if (hostname.includes('tiki.vn')) {
-            storeName = 'Tiki';
-        } else {
-            storeName = urlObj.hostname.replace(/^www\./, ''); // Use hostname if not a known e-commerce site
-        }
+        storeName = urlObj.hostname.replace(/^www\./, '');
       } catch (e) {
-        console.warn(`[priceComparisonFlow] Invalid URL from search result: ${result.link}`);
+        console.warn(`[priceComparisonFlow DEPRECATED] Invalid URL from search result: ${result.link}`);
       }
       return {
         productName: result.title,
         storeName: storeName,
-        price: 0, // Price is not extracted without AI
+        price: 0, 
         url: result.link,
         snippet: result.snippet,
       };
     });
     
-    console.log(`[priceComparisonFlow] Processed ${processedItems.length} items from web search results.`);
+    console.log(`[priceComparisonFlow DEPRECATED] Processed ${processedItems.length} items from web search results.`);
     return {
       items: processedItems,
-      searchContext: `Kết quả tìm kiếm trên web cho "${input.productIdentifier}". Giá không được trích xuất tự động.`,
+      searchContext: `Kết quả tìm kiếm trên web cho "${input.productIdentifier}". Giá không được trích xuất tự động. (Luồng này đã cũ)`,
     };
   }
 );
