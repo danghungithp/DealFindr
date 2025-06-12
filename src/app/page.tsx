@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -147,10 +148,7 @@ export default function HomePage() {
               <PriceComparisonSection data={priceComparisonData} isLoading={isLoading && isUrlInput && !priceComparisonData} attempted={isUrlInput} />
               <DiscountCodesSection data={discountCodesData} isLoading={isLoading && !discountCodesData} />
               <SocialSentimentSection data={socialSentimentData} isLoading={isLoading && !socialSentimentData} />
-              <AffiliateLinkSection 
-                productNameOrLink={productSearchTerm} 
-                affiliateBaseUrl="https://go.isclix.com/deep_link/4725587962428837650/4751584435713464237?sub3=tooldirectlink&sub4=oneatweb" 
-              />
+              <AffiliateLinkSection productNameOrLink={productSearchTerm} />
             </div>
           </div>
         )}
