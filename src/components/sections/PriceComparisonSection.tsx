@@ -46,14 +46,13 @@ export function PriceComparisonSection({ data, isLoading }: PriceComparisonSecti
               <TableRow>
                 <TableHead><List className="inline-block mr-1 h-4 w-4" />Sản Phẩm</TableHead>
                 <TableHead><Store className="inline-block mr-1 h-4 w-4" />Nguồn</TableHead>
-                <TableHead><Tag className="inline-block mr-1 h-4 w-4" />Giá</TableHead>
+                <TableHead><Tag className="inline-block mr-1 h-4 w-4" />Giá Ước Tính</TableHead>
                 <TableHead>Liên Kết</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.items.map((item, index) => {
                 const productUrl = item.url;
-                // Affiliate link for all search results
                 const purchaseLink = `${affiliatePrefix}?url=${encodeURIComponent(productUrl)}&${utmParameters}&${sub4Parameter}`;
                 return (
                   <TableRow key={index}>
@@ -62,15 +61,15 @@ export function PriceComparisonSection({ data, isLoading }: PriceComparisonSecti
                       {item.snippet && (
                         <div className="text-xs text-muted-foreground mt-1 flex items-start">
                           <FileText className="h-3.5 w-3.5 mr-1.5 shrink-0 mt-0.5" />
-                          <span className="flex-1">{item.snippet}</span>
+                          <span className="flex-1 line-clamp-3">{item.snippet}</span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell className="align-top">{item.storeName}</TableCell>
                     <TableCell className="align-top">
-                      {item.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                      {item.price > 0 ? item.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : "Không rõ"}
                       {item.price === 0 && (
-                        <p className="text-xs text-muted-foreground">(Giá không có sẵn)</p>
+                        <p className="text-xs text-muted-foreground">(Chưa trích xuất được)</p>
                       )}
                     </TableCell>
                     <TableCell className="align-top">
