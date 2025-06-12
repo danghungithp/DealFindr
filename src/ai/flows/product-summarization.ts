@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -23,7 +24,7 @@ export type ProductSummaryInput = z.infer<typeof ProductSummaryInputSchema>;
 const ProductSummaryOutputSchema = z.object({
   summary: z
     .string()
-    .describe('A concise summary of the product specifications and descriptions.'),
+    .describe('A concise summary of the product specifications and descriptions, in Vietnamese.'),
 });
 
 export type ProductSummaryOutput = z.infer<typeof ProductSummaryOutputSchema>;
@@ -36,9 +37,11 @@ const productSummaryPrompt = ai.definePrompt({
   name: 'productSummaryPrompt',
   input: {schema: ProductSummaryInputSchema},
   output: {schema: ProductSummaryOutputSchema},
-  prompt: `You are an expert product summarizer.  Your job is to take a URL of a product page, and to create a concise summary of the product's specifications and descriptions.
+  prompt: `Bạn là một chuyên gia tóm tắt sản phẩm. Công việc của bạn là lấy URL của một trang sản phẩm và tạo ra một bản tóm tắt ngắn gọn về thông số kỹ thuật và mô tả của sản phẩm.
 
-Product URL: {{{productUrl}}}`,
+Product URL: {{{productUrl}}}
+
+Toàn bộ phản hồi của bạn PHẢI bằng tiếng Việt.`,
 });
 
 const productSummaryFlow = ai.defineFlow(
@@ -52,3 +55,4 @@ const productSummaryFlow = ai.defineFlow(
     return output!;
   }
 );
+
