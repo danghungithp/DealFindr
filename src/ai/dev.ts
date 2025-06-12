@@ -1,1 +1,7 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/social-sentiment-analysis.ts';
+import '@/ai/flows/price-comparison.ts';
+import '@/ai/flows/product-summarization.ts';
+import '@/ai/flows/discount-hunter.ts';
