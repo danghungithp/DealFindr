@@ -34,7 +34,7 @@ const ProductFindingSchema = z.object({
   storeName: z.string().optional().describe('Tên cửa hàng/website được suy ra từ URL (ví dụ: Shopee, Lazada, Tiki, hoặc tên miền khác).'),
 });
 
-const WebProductInsightsOutputSchema = z.object({
+const WebProductInsightsOutputInternalSchema = z.object({
   analyzedProductName: z.string().describe('Tên sản phẩm chính được AI xác định từ kết quả tìm kiếm và từ khóa.'),
   overallSummary: z.string().describe('Tóm tắt chung về sản phẩm dựa trên các kết quả tìm kiếm từ web, bằng tiếng Việt.'),
   positiveMentions: z.array(z.string()).describe('Danh sách các điểm tích cực hoặc đánh giá tốt được tìm thấy, bằng tiếng Việt.'),
@@ -42,6 +42,10 @@ const WebProductInsightsOutputSchema = z.object({
   discountMentions: z.array(z.string()).describe('Danh sách các đề cập về mã giảm giá hoặc khuyến mãi tìm thấy từ web (mang tính tham khảo), bằng tiếng Việt.'),
   keySources: z.array(KeySourceSchema).describe('Một vài nguồn tin chính từ kết quả tìm kiếm mà AI cho là quan trọng.'),
   productFindings: z.array(ProductFindingSchema).describe('Danh sách các sản phẩm cụ thể tìm thấy với giá ước tính (tối đa 5-7 mục).'),
+});
+
+
+const WebProductInsightsOutputSchema = WebProductInsightsOutputInternalSchema.extend({
   originalSearchQuery: z.string().describe('Từ khóa tìm kiếm gốc của người dùng.')
 });
 export type WebProductInsightsOutput = z.infer<typeof WebProductInsightsOutputSchema>;
@@ -53,7 +57,7 @@ export async function fetchWebProductInsights(input: WebProductInsightsInput): P
 const analyzeWebResultsPrompt = ai.definePrompt({
   name: 'analyzeWebResultsPrompt',
   input: { schema: z.object({ productIdentifier: z.string(), searchResults: DuckDuckGoSearchOutputSchema }) },
-  output: { schema: WebProductInsightsOutputSchema.omit({ originalSearchQuery: true }) }, // originalSearchQuery is added back in the flow
+  output: { schema: WebProductInsightsOutputInternalSchema },
   prompt: `Bạn là một trợ lý nghiên cứu thị trường AI. Nhiệm vụ của bạn là phân tích kết quả tìm kiếm trên web được cung cấp để tìm hiểu thông tin về một sản phẩm hoặc chủ đề.
 
 Từ khóa tìm kiếm gốc: {{{productIdentifier}}}
@@ -95,40 +99,21 @@ const webProductInsightsFlow = ai.defineFlow(
     outputSchema: WebProductInsightsOutputSchema,
   },
   async (input): Promise<WebProductInsightsOutput> => {
-    console.log(`[webProductInsightsFlow] Received productIdentifier for web search: ${input.productIdentifier}`);
-    
-    const rawSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({ 
-      query: input.productIdentifier 
-    });
-
-    console.log(`[webProductInsightsFlow] DuckDuckGo returned ${rawSearchResults.length} results.`);
-    if (rawSearchResults.length > 0) {
-        rawSearchResults.forEach((r, i) => console.log(`[webProductInsightsFlow] Result ${i}: ${r.title} - ${r.link}`));
-    } else {
-      console.log('[webProductInsightsFlow] No results from DuckDuckGo.');
-       return {
-        analyzedProductName: "Không xác định",
-        overallSummary: "Không tìm thấy kết quả nào từ web cho tìm kiếm này.",
-        positiveMentions: [],
-        negativeMentions: [],
-        discountMentions: [],
-        keySources: [],
-        productFindings: [],
-        originalSearchQuery: input.productIdentifier,
-      };
-    }
-
     try {
-      const {output} = await analyzeWebResultsPrompt({
-        productIdentifier: input.productIdentifier,
-        searchResults: rawSearchResults
-      });
+      console.log(`[webProductInsightsFlow] Received productIdentifier for web search: ${input.productIdentifier}`);
       
-      if (!output) {
-        console.warn('[webProductInsightsFlow] AI analysis returned no output.');
+      const rawSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({ 
+        query: input.productIdentifier 
+      });
+
+      console.log(`[webProductInsightsFlow] DuckDuckGo returned ${rawSearchResults.length} results.`);
+      if (rawSearchResults.length > 0) {
+          rawSearchResults.forEach((r, i) => console.log(`[webProductInsightsFlow] Result ${i}: ${r.title} - ${r.link}`));
+      } else {
+        console.log('[webProductInsightsFlow] No results from DuckDuckGo.');
         return {
           analyzedProductName: "Không xác định",
-          overallSummary: "AI không thể phân tích kết quả tìm kiếm.",
+          overallSummary: `Không tìm thấy kết quả nào từ web cho tìm kiếm "${input.productIdentifier}".`,
           positiveMentions: [],
           negativeMentions: [],
           discountMentions: [],
@@ -137,18 +122,55 @@ const webProductInsightsFlow = ai.defineFlow(
           originalSearchQuery: input.productIdentifier,
         };
       }
-      console.log('[webProductInsightsFlow] AI analysis successful. Product findings count:', output.productFindings?.length);
-      return { ...output, originalSearchQuery: input.productIdentifier };
+
+      const {output: rawAiOutput} = await analyzeWebResultsPrompt({
+        productIdentifier: input.productIdentifier,
+        searchResults: rawSearchResults
+      });
+      
+      if (!rawAiOutput) {
+        console.warn('[webProductInsightsFlow] AI analysis returned no output (null or undefined).');
+        return {
+          analyzedProductName: "Không xác định",
+          overallSummary: "AI không thể phân tích kết quả tìm kiếm (không có output).",
+          positiveMentions: [],
+          negativeMentions: [],
+          discountMentions: [],
+          keySources: [],
+          productFindings: [],
+          originalSearchQuery: input.productIdentifier,
+        };
+      }
+
+      // Explicitly parse AI output to catch schema mismatches
+      const parsedAiOutput = WebProductInsightsOutputInternalSchema.safeParse(rawAiOutput);
+
+      if (!parsedAiOutput.success) {
+        console.error('[webProductInsightsFlow] AI output failed Zod validation:', parsedAiOutput.error.flatten());
+        return {
+          analyzedProductName: "Lỗi định dạng",
+          overallSummary: "Output từ AI không đúng định dạng mong muốn. Vui lòng kiểm tra logs.",
+          positiveMentions: [],
+          negativeMentions: [],
+          discountMentions: [],
+          keySources: [],
+          productFindings: [],
+          originalSearchQuery: input.productIdentifier,
+        };
+      }
+      
+      console.log('[webProductInsightsFlow] AI analysis successful and validated. Product findings count:', parsedAiOutput.data.productFindings?.length);
+      return { ...parsedAiOutput.data, originalSearchQuery: input.productIdentifier };
 
     } catch (error) {
-      console.error('[webProductInsightsFlow] Error during AI analysis:', error);
-      let errorMessage = "Đã xảy ra lỗi trong quá trình AI phân tích kết quả tìm kiếm.";
+      console.error('[webProductInsightsFlow] Critical error in flow execution:', error);
+      let errorMessage = "Đã xảy ra lỗi nghiêm trọng trong quá trình xử lý.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
       return {
-        analyzedProductName: "Lỗi phân tích",
-        overallSummary: `Lỗi AI: ${errorMessage}`,
+        analyzedProductName: "Lỗi nghiêm trọng",
+        overallSummary: `Lỗi hệ thống: ${errorMessage}`,
         positiveMentions: [],
         negativeMentions: [],
         discountMentions: [],
