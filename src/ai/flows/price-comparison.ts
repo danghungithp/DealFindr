@@ -5,7 +5,7 @@
  * @fileOverview A product listing utility using DuckDuckGo search.
  *
  * - priceComparison - A function that lists products for a search keyword
- *   from specified e-commerce sites using DuckDuckGo.
+ *   from the web using DuckDuckGo.
  * - PriceComparisonInput - The input type for the priceComparison function.
  * - PriceComparisonOutput - The return type for the priceComparison function.
  */
@@ -23,7 +23,7 @@ export type PriceComparisonInput = z.infer<typeof PriceComparisonInputSchema>;
 
 const ProductPriceInfoSchema = z.object({
   productName: z.string().describe('Tên sản phẩm từ kết quả tìm kiếm.'),
-  storeName: z.string().describe('Tên cửa hàng/website (ví dụ: Shopee, Lazada, Tiki).'),
+  storeName: z.string().describe('Tên cửa hàng/website (ví dụ: Shopee, Lazada, Tiki, hoặc tên miền khác).'),
   price: z.number().default(0).describe('Giá sản phẩm. Mặc định là 0 do không có phân tích AI.'),
   url: z.string().url().describe('URL trực tiếp đến trang sản phẩm hoặc kết quả tìm kiếm.'),
   snippet: z.string().optional().describe('Mô tả ngắn từ kết quả tìm kiếm (nếu có).'),
@@ -40,8 +40,6 @@ export async function priceComparison(input: PriceComparisonInput): Promise<Pric
   return priceComparisonFlow(input);
 }
 
-const TARGET_ECOMMERCE_DOMAINS = ['shopee.vn', 'lazada.vn', 'tiki.vn'];
-
 const priceComparisonFlow = ai.defineFlow(
   {
     name: 'priceComparisonFlow',
@@ -49,19 +47,19 @@ const priceComparisonFlow = ai.defineFlow(
     outputSchema: PriceComparisonOutputSchema,
   },
   async (input): Promise<PriceComparisonOutput> => {
-    console.log(`[priceComparisonFlow] Received productIdentifier for e-commerce search: ${input.productIdentifier}`);
+    console.log(`[priceComparisonFlow] Received productIdentifier for web search: ${input.productIdentifier}`);
     
+    // Call DuckDuckGo search without domain restrictions
     const rawSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({ 
-      query: input.productIdentifier,
-      domains: TARGET_ECOMMERCE_DOMAINS 
+      query: input.productIdentifier 
     });
 
-    console.log(`[priceComparisonFlow] DuckDuckGo returned ${rawSearchResults.length} results from ${TARGET_ECOMMERCE_DOMAINS.join(', ')}.`);
+    console.log(`[priceComparisonFlow] DuckDuckGo returned ${rawSearchResults.length} results from web search.`);
 
     if (rawSearchResults.length === 0) {
       return {
         items: [],
-        searchContext: `Không tìm thấy kết quả nào cho "${input.productIdentifier}" trên Shopee, Lazada, hoặc Tiki.`,
+        searchContext: `Không tìm thấy kết quả nào cho "${input.productIdentifier}" trên web.`,
       };
     }
     
@@ -70,6 +68,7 @@ const priceComparisonFlow = ai.defineFlow(
       try {
         const urlObj = new URL(result.link);
         const hostname = urlObj.hostname.toLowerCase();
+        // Basic store name inference, can be expanded
         if (hostname.includes('shopee.vn')) {
             storeName = 'Shopee';
         } else if (hostname.includes('lazada.vn')) {
@@ -77,8 +76,7 @@ const priceComparisonFlow = ai.defineFlow(
         } else if (hostname.includes('tiki.vn')) {
             storeName = 'Tiki';
         } else {
-             // Fallback if DuckDuckGo returns a link from within a broader search that still matched one of the domains
-            storeName = urlObj.hostname.replace(/^www\./, '');
+            storeName = urlObj.hostname.replace(/^www\./, ''); // Use hostname if not a known e-commerce site
         }
       } catch (e) {
         console.warn(`[priceComparisonFlow] Invalid URL from search result: ${result.link}`);
@@ -92,11 +90,10 @@ const priceComparisonFlow = ai.defineFlow(
       };
     });
     
-    console.log(`[priceComparisonFlow] Processed ${processedItems.length} items from e-commerce search results.`);
+    console.log(`[priceComparisonFlow] Processed ${processedItems.length} items from web search results.`);
     return {
       items: processedItems,
-      searchContext: `Kết quả tìm kiếm cho "${input.productIdentifier}" trên Shopee, Lazada, và Tiki. Giá không được trích xuất tự động.`,
+      searchContext: `Kết quả tìm kiếm trên web cho "${input.productIdentifier}". Giá không được trích xuất tự động.`,
     };
   }
 );
-
