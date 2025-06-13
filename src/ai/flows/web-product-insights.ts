@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -114,24 +113,34 @@ const webProductInsightsFlow = ai.defineFlow(
     try {
       // 1. Search for products on e-commerce and general web
       const generalWebSearchQuery = input.productIdentifier;
-      console.log(`[webProductInsightsFlow] Performing general web search for: "${generalWebSearchQuery}"`);
-      const generalWebSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({
+      console.log(`[webProductInsightsFlow] Performing e-commerce domain search for: "${generalWebSearchQuery}"`);
+      let generalWebSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({
         query: generalWebSearchQuery,
         domains: ECOMMERCE_DOMAINS, 
       });
+      let usedFallback = false;
+      // Nếu không có kết quả, fallback sang tìm kiếm toàn web
+      if (!generalWebSearchResults || generalWebSearchResults.length === 0) {
+        console.log(`[webProductInsightsFlow] No e-commerce results found. Fallback to global web search for: "${generalWebSearchQuery}"`);
+        generalWebSearchResults = await duckDuckGoSearchTool({
+          query: generalWebSearchQuery
+        });
+        usedFallback = true;
+      }
 
-      searchContextMessage = `Kết quả dựa trên tìm kiếm cho "${input.productIdentifier}".\n`;
+      searchContextMessage = `Kết quả dựa trên tìm kiếm cho "${input.productIdentifier}".`;
+      if (usedFallback) {
+        searchContextMessage += " (Đã mở rộng tìm kiếm toàn web do không có kết quả từ các sàn TMĐT lớn.) ";
+      }
 
       if (generalWebSearchResults && generalWebSearchResults.length > 0) {
         searchContextMessage += `Đã tìm thấy ${generalWebSearchResults.length} kết quả từ web để AI phân tích. `;
         console.log(`[webProductInsightsFlow] Found ${generalWebSearchResults.length} web results. Sending to AI for analysis.`);
-        
         const aiAnalysisInput = {
             productIdentifier: input.productIdentifier,
             searchResults: generalWebSearchResults,
         };
         const { output: rawAiOutput } = await analyzeProductWebResultsPrompt(aiAnalysisInput);
-
         if (rawAiOutput) {
             const validatedAIOutput = AIAnalysisOutputSchema.safeParse(rawAiOutput);
             if (validatedAIOutput.success) {
@@ -140,7 +149,6 @@ const webProductInsightsFlow = ai.defineFlow(
             } else {
                 console.error('[webProductInsightsFlow] AI output failed Zod validation:', validatedAIOutput.error.format());
                 aiAnalysis.overallSummary = "AI đã trả về dữ liệu không hợp lệ. Không thể hiển thị phân tích chi tiết.";
-                 // Populate productFindings with raw search results if AI fails, but mark price/store as unknown
                 aiAnalysis.productFindings = generalWebSearchResults.map(r => ({
                     title: r.title,
                     url: r.link,
@@ -152,8 +160,7 @@ const webProductInsightsFlow = ai.defineFlow(
         } else {
            console.warn('[webProductInsightsFlow] AI did not return any output for web results.');
            aiAnalysis.overallSummary = "AI không thể phân tích kết quả tìm kiếm web.";
-           // Populate productFindings with raw search results if AI fails, but mark price/store as unknown
-            aiAnalysis.productFindings = generalWebSearchResults.map(r => ({
+           aiAnalysis.productFindings = generalWebSearchResults.map(r => ({
                 title: r.title,
                 url: r.link,
                 snippet: r.snippet,

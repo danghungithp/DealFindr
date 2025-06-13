@@ -1,4 +1,3 @@
-
 /**
  * @fileOverview DuckDuckGo search tool for Genkit.
  *
@@ -28,7 +27,7 @@ export type DuckDuckGoSearchOutput = z.infer<typeof DuckDuckGoSearchOutputSchema
 
 // Explicitly use undefined for search options to rely on duck-duck-scrape defaults,
 // unless we are doing site-specific search.
-const DEFAULT_MAX_RESULTS = 5; // Keep it low for AI processing
+const DEFAULT_MAX_RESULTS = 10; // Tăng số lượng kết quả tối đa lên 10
 
 export const duckDuckGoSearchTool = ai.defineTool(
   {
