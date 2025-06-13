@@ -8,13 +8,26 @@ const AccesstradeCouponSchema = z.object({
   coupon_desc: z.string(),
 });
 
+const CategorySchema = z.object({
+  category_name: z.string(),
+  category_name_show: z.string(),
+  category_no: z.string(),
+});
+
 const AccesstradeOfferSchema = z.object({
   aff_link: z.string().url(),
-  coupons: z.array(AccesstradeCouponSchema),
-  name: z.string(),
+  banners: z.array(z.any()).optional(), // Can be more specific if banner structure is known
+  categories: z.array(CategorySchema).optional(),
   content: z.string(),
+  coupons: z.array(AccesstradeCouponSchema),
   domain: z.string(),
   end_time: z.string(),
+  id: z.string(),
+  image: z.string().url().optional(),
+  link: z.string().url(),
+  merchant: z.string(),
+  name: z.string(),
+  start_time: z.string(),
 });
 
 const AccesstradeApiResponseSchema = z.object({
@@ -30,9 +43,7 @@ export interface FormattedCoupon {
   end_time: string;
 }
 
-// Removed FREE_SHIPPING_KEYWORDS and isFreeShippingCoupon function
-
-export async function fetchShopeeVouchers(): Promise<FormattedCoupon[]> { // Renamed function
+export async function fetchShopeeVouchers(): Promise<FormattedCoupon[]> {
   const apiUrl = 'https://api.accesstrade.vn/v1/offers_informations?domain=shopee.vn';
   const apiToken = process.env.ACCESSTRADE_API_TOKEN;
 
@@ -46,7 +57,7 @@ export async function fetchShopeeVouchers(): Promise<FormattedCoupon[]> { // Ren
       headers: {
         'Authorization': `Token ${apiToken}`,
       },
-      cache: 'no-store', // Fetch fresh data each time
+      cache: 'no-store', 
     });
 
     if (!response.ok) {
@@ -60,7 +71,7 @@ export async function fetchShopeeVouchers(): Promise<FormattedCoupon[]> { // Ren
     const parsedData = AccesstradeApiResponseSchema.safeParse(rawData);
 
     if (!parsedData.success) {
-      console.error('Failed to parse Accesstrade API response:', parsedData.error);
+      console.error('Failed to parse Accesstrade API response:', parsedData.error.format());
       return [];
     }
 
@@ -71,14 +82,13 @@ export async function fetchShopeeVouchers(): Promise<FormattedCoupon[]> { // Ren
           code: coupon.coupon_code,
           description: coupon.coupon_desc,
           aff_link: offer.aff_link,
-          offer_name: offer.name,
+          offer_name: offer.name, // Using offer.name for the coupon's offer context
           domain: offer.domain,
           end_time: offer.end_time,
         });
       });
     });
     
-    // Removed the filter for free shipping coupons
     return allFormattedCoupons;
 
   } catch (error) {
