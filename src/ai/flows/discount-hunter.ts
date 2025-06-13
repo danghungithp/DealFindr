@@ -2,7 +2,9 @@
 'use server';
 
 /**
- * @fileOverview Discount code finder flow using Accesstrade API.
+ * @fileOverview Discount code finder flow using Accesstrade API for Shopee.
+ * This flow fetches all available Shopee vouchers via Accesstrade,
+ * irrespective of the input product name.
  *
  * - findDiscountCodes - A function that finds discount codes for Shopee via Accesstrade.
  * - FindDiscountCodesInput - The input type for the findDiscountCodes function.
@@ -11,10 +13,10 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { fetchShopeeDiscountCodes, type FormattedCoupon } from '@/services/accesstrade';
+import { fetchShopeeVouchers, type FormattedCoupon } from '@/services/accesstrade'; // Updated import
 
 const FindDiscountCodesInputSchema = z.object({
-  productName: z.string().describe('The name of the product. Currently used to trigger the Shopee coupon search, but not for specific product filtering within this flow.'),
+  productName: z.string().describe('The name of the product. This input is used to trigger the flow but does not filter the vouchers fetched, which are always for Shopee.'),
 });
 export type FindDiscountCodesInput = z.infer<typeof FindDiscountCodesInputSchema>;
 
@@ -34,9 +36,7 @@ export type FindDiscountCodesOutput = z.infer<typeof FindDiscountCodesOutputSche
 
 
 export async function findDiscountCodes(input: FindDiscountCodesInput): Promise<FindDiscountCodesOutput> {
-  // Input `productName` is available if needed in the future to select different domains or APIs.
-  // For now, we are hardcoding to fetch Shopee codes.
-  console.log(`Finding discount codes, triggered by search for: ${input.productName}`);
+  console.log(`Finding all available Shopee discount codes from Accesstrade, triggered by search for: ${input.productName} (product name is not used for filtering).`);
   return findDiscountCodesFlow(input);
 }
 
@@ -47,12 +47,10 @@ const findDiscountCodesFlow = ai.defineFlow(
     outputSchema: FindDiscountCodesOutputSchema,
   },
   async (input) => {
-    // Currently, input.productName is ignored, and we always fetch Shopee codes.
-    // This could be expanded later to choose different domains or logic based on productName.
-    const accesstradeCoupons: FormattedCoupon[] = await fetchShopeeDiscountCodes();
+    // input.productName is ignored; we always fetch all available Shopee vouchers.
+    const accesstradeCoupons: FormattedCoupon[] = await fetchShopeeVouchers(); // Updated service call
     
-    // Adapt the fetched coupons to the flow's output schema.
-    // The FormattedCoupon structure from the service already matches the CouponSchema here.
     return { coupons: accesstradeCoupons };
   }
 );
+

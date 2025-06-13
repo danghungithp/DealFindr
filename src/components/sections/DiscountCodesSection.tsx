@@ -30,14 +30,18 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
 
   const formatDate = (dateString: string) => {
     try {
-      return format(parseISO(dateString), "dd/MM/yyyy HH:mm", { locale: vi });
-    } catch (error) {
-      // Handle cases where dateString might be just a date without time
-      try {
-        return format(parseISO(dateString), "dd/MM/yyyy", { locale: vi });
-      } catch (err) {
-        return "Không rõ";
+      // Attempt to parse as full ISO string (date and time)
+      let parsedDate = parseISO(dateString);
+      // Check if the time part is midnight (00:00:00.000Z), common for date-only strings from APIs
+      if (parsedDate.getUTCHours() === 0 && parsedDate.getUTCMinutes() === 0 && parsedDate.getUTCSeconds() === 0 && parsedDate.getUTCMilliseconds() === 0) {
+        // If it's midnight UTC, format as date only, assuming it was intended as such
+        return format(parsedDate, "dd/MM/yyyy", { locale: vi });
       }
+      // Otherwise, format with date and time
+      return format(parsedDate, "dd/MM/yyyy HH:mm", { locale: vi });
+    } catch (error) {
+      // Fallback for unexpected formats or if parseISO fails
+      return "Không rõ";
     }
   };
 
@@ -46,7 +50,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <Ticket className="mr-2 h-6 w-6 text-primary" />
-          Mã Miễn Phí Vận Chuyển (Shopee)
+          Ưu Đãi & Voucher Hiện Có (Shopee)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -81,7 +85,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
                 </div>
                 <p className="text-sm text-foreground/90 mb-1">{coupon.description}</p>
                 <p className="text-xs text-muted-foreground mb-2">
-                  <span className="font-medium">Ưu đãi:</span> {coupon.offer_name}
+                  <span className="font-medium">Ưu đãi từ:</span> {coupon.offer_name}
                 </p>
                  <div className="flex items-center text-xs text-muted-foreground mb-3">
                   <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
@@ -94,7 +98,7 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
                   asChild
                 >
                   <a href={coupon.aff_link} target="_blank" rel="noopener noreferrer">
-                    Sử dụng ngay <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                    Đến ưu đãi <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                   </a>
                 </Button>
               </div>
@@ -103,10 +107,11 @@ export function DiscountCodesSection({ data, isLoading }: DiscountCodesSectionPr
         ) : (
           <div className="flex items-center text-muted-foreground p-4 justify-center">
             <Info className="mr-2 h-5 w-5" />
-            <span>Không tìm thấy mã miễn phí vận chuyển nào cho Shopee hiện tại.</span>
+            <span>Không tìm thấy ưu đãi hoặc voucher nào cho Shopee từ Accesstrade hiện tại.</span>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
