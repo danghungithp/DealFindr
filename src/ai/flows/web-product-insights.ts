@@ -17,20 +17,20 @@ import { duckDuckGoSearchTool, type DuckDuckGoSearchOutput, type DuckDuckGoSearc
 // Define Schemas
 
 const ProductFindingSchema = z.object({
-  title: z.string().describe('Tên sản phẩm hoặc tiêu đề trang web/video.'),
-  url: z.string().url().describe('URL trực tiếp đến trang sản phẩm hoặc video.'),
-  snippet: z.string().optional().describe('Mô tả ngắn từ kết quả tìm kiếm hoặc video.'),
+  title: z.string().describe('Tên sản phẩm hoặc tiêu đề trang web.'),
+  url: z.string().url().describe('URL trực tiếp đến trang sản phẩm.'),
+  snippet: z.string().optional().describe('Mô tả ngắn từ kết quả tìm kiếm.'),
   extractedPrice: z.string().optional().describe('Giá ước tính được AI trích xuất (ví dụ: "1.200.000 đ", "Liên hệ", "Không rõ").'),
-  storeName: z.string().optional().describe('Tên cửa hàng được AI suy luận (ví dụ: Shopee, Lazada, Tiki) hoặc nguồn (YouTube).'),
+  storeName: z.string().optional().describe('Tên cửa hàng được AI suy luận (ví dụ: Shopee, Lazada, Tiki) hoặc nguồn (nếu không phải cửa hàng cụ thể).'),
 });
-export type ProductFinding = z.infer<typeof ProductFindingSchema>; // Export type for component
+export type ProductFinding = z.infer<typeof ProductFindingSchema>;
 
 const VideoFindingSchema = z.object({
   title: z.string().describe('Tiêu đề video.'),
   url: z.string().url().describe('URL trực tiếp đến video YouTube.'),
   snippet: z.string().optional().describe('Mô tả ngắn của video.'),
 });
-export type VideoFinding = z.infer<typeof VideoFindingSchema>; // Export type for component
+export type VideoFinding = z.infer<typeof VideoFindingSchema>;
 
 
 const WebProductInsightsInputSchema = z.object({
@@ -38,7 +38,6 @@ const WebProductInsightsInputSchema = z.object({
     .string()
     .describe('Từ khóa tìm kiếm sản phẩm.'),
 });
-// Export type for page.tsx
 export type WebProductInsightsInput = z.infer<typeof WebProductInsightsInputSchema>;
 
 
@@ -57,7 +56,6 @@ const WebProductInsightsOutputSchema = z.object({
   searchContext: z.string().describe("Thông tin về các truy vấn tìm kiếm đã được thực hiện."),
   originalSearchQuery: z.string().describe('Từ khóa tìm kiếm gốc của người dùng.')
 });
-// Export type for page.tsx
 export type WebProductInsightsOutput = z.infer<typeof WebProductInsightsOutputSchema>;
 
 
@@ -110,22 +108,24 @@ const webProductInsightsFlow = ai.defineFlow(
     let videoResults: VideoFinding[] = [];
     let searchContextMessage = "";
 
-    const ECOMMERCE_DOMAINS = ['shopee.vn', 'lazada.vn', 'tiki.vn', 'nguyenkim.com', 'dienmayxanh.com', 'fptshop.com.vn', 'cellphones.com.vn'];
+    const ECOMMERCE_DOMAINS = ['shopee.vn', 'lazada.vn', 'tiki.vn', 'nguyenkim.com', 'dienmayxanh.com', 'fptshop.com.vn', 'cellphones.com.vn', 'thegioididong.com'];
     const YOUTUBE_DOMAIN = ['youtube.com'];
 
     try {
       // 1. Search for products on e-commerce and general web
       const generalWebSearchQuery = input.productIdentifier;
+      console.log(`[webProductInsightsFlow] Performing general web search for: "${generalWebSearchQuery}"`);
       const generalWebSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({
         query: generalWebSearchQuery,
-        domains: ECOMMERCE_DOMAINS, // Focus on e-commerce, but DDG might return general web too
+        domains: ECOMMERCE_DOMAINS, 
       });
 
       searchContextMessage = `Kết quả dựa trên tìm kiếm cho "${input.productIdentifier}".\n`;
 
       if (generalWebSearchResults && generalWebSearchResults.length > 0) {
-        searchContextMessage += `Đã tìm thấy ${generalWebSearchResults.length} kết quả từ web để phân tích. `;
-        // Use safeParse to validate AI output against a temporary schema excluding originalSearchQuery
+        searchContextMessage += `Đã tìm thấy ${generalWebSearchResults.length} kết quả từ web để AI phân tích. `;
+        console.log(`[webProductInsightsFlow] Found ${generalWebSearchResults.length} web results. Sending to AI for analysis.`);
+        
         const aiAnalysisInput = {
             productIdentifier: input.productIdentifier,
             searchResults: generalWebSearchResults,
@@ -136,20 +136,40 @@ const webProductInsightsFlow = ai.defineFlow(
             const validatedAIOutput = AIAnalysisOutputSchema.safeParse(rawAiOutput);
             if (validatedAIOutput.success) {
                 aiAnalysis = validatedAIOutput.data;
+                console.log(`[webProductInsightsFlow] AI analysis successful. Analyzed product: ${aiAnalysis.analyzedProductName}, Found ${aiAnalysis.productFindings.length} product findings.`);
             } else {
-                console.error('[webProductInsightsFlow] AI output failed Zod validation:', validatedAIOutput.error);
+                console.error('[webProductInsightsFlow] AI output failed Zod validation:', validatedAIOutput.error.format());
                 aiAnalysis.overallSummary = "AI đã trả về dữ liệu không hợp lệ. Không thể hiển thị phân tích chi tiết.";
+                 // Populate productFindings with raw search results if AI fails, but mark price/store as unknown
+                aiAnalysis.productFindings = generalWebSearchResults.map(r => ({
+                    title: r.title,
+                    url: r.link,
+                    snippet: r.snippet,
+                    extractedPrice: "Lỗi AI",
+                    storeName: new URL(r.link).hostname.replace(/^www\./, '') || "Không rõ"
+                }));
             }
         } else {
+           console.warn('[webProductInsightsFlow] AI did not return any output for web results.');
            aiAnalysis.overallSummary = "AI không thể phân tích kết quả tìm kiếm web.";
+           // Populate productFindings with raw search results if AI fails, but mark price/store as unknown
+            aiAnalysis.productFindings = generalWebSearchResults.map(r => ({
+                title: r.title,
+                url: r.link,
+                snippet: r.snippet,
+                extractedPrice: "AI không phản hồi",
+                storeName: new URL(r.link).hostname.replace(/^www\./, '') || "Không rõ"
+            }));
         }
       } else {
+        console.log(`[webProductInsightsFlow] No web results found for "${generalWebSearchQuery}".`);
         searchContextMessage += "Không tìm thấy kết quả web nào để phân tích giá. ";
         aiAnalysis.overallSummary = `Không tìm thấy kết quả web nào phù hợp để phân tích cho "${input.productIdentifier}".`;
       }
 
       // 2. Search for YouTube videos
-      const videoSearchQuery = `${input.productIdentifier} review OR ${input.productIdentifier} trên tay OR ${input.productIdentifier} đánh giá`;
+      const videoSearchQuery = `${input.productIdentifier} review OR ${input.productIdentifier} trên tay OR ${input.productIdentifier} đánh giá OR ${input.productIdentifier} unboxing`;
+      console.log(`[webProductInsightsFlow] Performing YouTube search for: "${videoSearchQuery}"`);
       const youtubeSearchResults: DuckDuckGoSearchOutput = await duckDuckGoSearchTool({
         query: videoSearchQuery,
         domains: YOUTUBE_DOMAIN,
@@ -157,12 +177,14 @@ const webProductInsightsFlow = ai.defineFlow(
 
       if (youtubeSearchResults && youtubeSearchResults.length > 0) {
         searchContextMessage += `Tìm thấy ${youtubeSearchResults.length} video trên YouTube.`;
+        console.log(`[webProductInsightsFlow] Found ${youtubeSearchResults.length} YouTube results.`);
         videoResults = youtubeSearchResults.map(result => ({
           title: result.title,
           url: result.link,
           snippet: result.snippet,
         }));
       } else {
+        console.log(`[webProductInsightsFlow] No YouTube results found for "${videoSearchQuery}".`);
         searchContextMessage += "Không tìm thấy video nào trên YouTube.";
       }
       
@@ -197,7 +219,3 @@ const webProductInsightsFlow = ai.defineFlow(
     }
   }
 );
-
-    
-
-    

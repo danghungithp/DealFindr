@@ -22,12 +22,16 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
   const utmParametersVideo = "utm_source=dealfindr&utm_medium=youtube_listing&utm_campaign=video_listing";
   const sub4Parameter = "sub4=oneatweb_insights";
 
+  const cardTitle = data?.analyzedProductName && data.analyzedProductName !== data.originalSearchQuery 
+    ? `Thông Tin Sản Phẩm: ${data.analyzedProductName}` 
+    : "Thông Tin Sản Phẩm Toàn Diện (Web & Video)";
+
   return (
     <Card className="shadow-lg lg:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <ShoppingBag className="mr-2 h-6 w-6 text-primary" /> 
-          Thông Tin Sản Phẩm Từ Web & Video
+          {isLoading && !data ? "Đang tải thông tin sản phẩm..." : cardTitle}
         </CardTitle>
         {data?.searchContext && !isLoading && (
           <CardDescription>
@@ -36,40 +40,57 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
         )}
       </CardHeader>
       <CardContent className="space-y-8">
-        {isLoading ? (
+        {isLoading && !data ? ( // Show detailed skeleton only when initial loading and no data yet
           <>
-            <Skeleton className="h-8 w-3/4 mb-2" />
-            <Skeleton className="h-6 w-full mb-1" />
-            <Skeleton className="h-10 w-full mb-4" />
-            <Skeleton className="h-6 w-1/2 mb-2" />
-            <Skeleton className="h-10 w-full mb-1" />
-            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-8 w-3/4 mb-2" /> {/* For AI Summary Title */}
+            <Skeleton className="h-6 w-full mb-4" /> {/* For AI Summary Content */}
+            
+            <Skeleton className="h-6 w-1/2 mb-2" /> {/* For Product Findings Title */}
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" /> {/* Table Row Skeleton */}
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            
+            <Skeleton className="h-6 w-1/2 mb-2 mt-6" /> {/* For Video Findings Title */}
+             <div className="space-y-2">
+              <Skeleton className="h-10 w-full" /> {/* Table Row Skeleton */}
+              <Skeleton className="h-10 w-full" />
+            </div>
           </>
         ) : data ? (
           <>
             {/* AI Summary Section */}
-            {data.analyzedProductName && (
+            {(data.overallSummary || (data.analyzedProductName && data.analyzedProductName !== data.originalSearchQuery)) && (
                  <div className="pb-4 border-b border-border/70">
                     <h3 className="font-semibold text-lg mb-1 flex items-center text-foreground/90">
                         <MessageSquareText className="mr-2 h-5 w-5 text-primary" />
-                        Tóm Tắt Phân Tích cho: <span className="text-primary ml-1">{data.analyzedProductName}</span>
+                        Phân Tích Từ AI cho: <span className="text-primary ml-1">{data.analyzedProductName || data.originalSearchQuery}</span>
                     </h3>
-                    {data.overallSummary && <p className="text-sm text-muted-foreground italic">{data.overallSummary}</p>}
+                    {data.overallSummary ? 
+                        <p className="text-sm text-muted-foreground italic">{data.overallSummary}</p> 
+                        : <p className="text-sm text-muted-foreground italic">AI đang phân tích hoặc không có tóm tắt cụ thể.</p>
+                    }
                  </div>
             )}
 
             {/* Product Findings Table */}
             <div>
               <h3 className="font-semibold text-lg mb-3 flex items-center text-foreground/90">
-                <List className="mr-2 h-5 w-5 text-primary" /> Sản Phẩm & Giá Tham Khảo Từ Web
+                <List className="mr-2 h-5 w-5 text-primary" /> Sản Phẩm & Giá Tham Khảo Từ Web (Phân tích bởi AI)
               </h3>
-              {hasProductFindings ? (
+              {isLoading && !hasProductFindings ? (
+                <div className="space-y-2 p-4 border border-dashed rounded-md">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ): hasProductFindings ? (
                 <div className="overflow-x-auto rounded-md border border-border/70">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[200px]">Tên Sản Phẩm/Trang</TableHead>
-                        <TableHead>Nguồn/Cửa Hàng</TableHead>
+                        <TableHead>Nguồn/Cửa Hàng (AI)</TableHead>
                         <TableHead>Giá Ước Tính (AI)</TableHead>
                         <TableHead>Liên Kết</TableHead>
                       </TableRow>
@@ -88,7 +109,7 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
                                 </p>
                               )}
                             </TableCell>
-                            <TableCell className="align-top">{item.storeName || "Web"}</TableCell>
+                            <TableCell className="align-top">{item.storeName || "Không rõ"}</TableCell>
                             <TableCell className="align-top">
                                 {item.extractedPrice || "Không rõ"}
                             </TableCell>
@@ -108,7 +129,7 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
               ) : (
                 <div className="flex items-center text-muted-foreground p-4 justify-center border border-dashed rounded-md">
                   <Info className="mr-2 h-5 w-5" />
-                  <span>Không tìm thấy thông tin sản phẩm hoặc giá từ web.</span>
+                  <span>Không tìm thấy thông tin sản phẩm hoặc giá từ web, hoặc AI không thể phân tích.</span>
                 </div>
               )}
             </div>
@@ -118,7 +139,12 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
               <h3 className="font-semibold text-lg mb-3 flex items-center text-foreground/90">
                 <Youtube className="mr-2 h-5 w-5 text-red-500" /> Video Liên Quan Từ YouTube
               </h3>
-              {hasVideoFindings ? (
+               {isLoading && !hasVideoFindings ? (
+                <div className="space-y-2 p-4 border border-dashed rounded-md">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : hasVideoFindings ? (
                 <div className="overflow-x-auto rounded-md border border-border/70">
                   <Table>
                     <TableHeader>
@@ -130,7 +156,16 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
                     </TableHeader>
                     <TableBody>
                       {data.videoFindings.map((video: VideoFinding, index: number) => {
-                        const videoLink = `${affiliatePrefix}?url=${encodeURIComponent(video.url)}&${utmParametersVideo}&${sub4Parameter}`;
+                        // Ensure video.url is a valid URL before encoding
+                        let validVideoUrl = video.url;
+                        try {
+                            new URL(video.url); // Check if it's a valid URL
+                        } catch (e) {
+                            console.warn(`Invalid video URL found: ${video.url}. Skipping affiliate link generation.`);
+                            validVideoUrl = "#"; // Fallback to a safe link
+                        }
+                        const videoLink = validVideoUrl === "#" ? "#" : `${affiliatePrefix}?url=${encodeURIComponent(validVideoUrl)}&${utmParametersVideo}&${sub4Parameter}`;
+                        
                         return (
                           <TableRow key={`video-${index}`}>
                             <TableCell className="font-medium align-top">{video.title}</TableCell>
@@ -144,7 +179,7 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
                               {!video.snippet && <span className="text-xs text-muted-foreground">Không có mô tả.</span>}
                             </TableCell>
                             <TableCell className="align-top">
-                              <Button variant="link" size="sm" asChild className="p-0 h-auto text-red-500 hover:text-red-500/80 text-xs whitespace-nowrap">
+                              <Button variant="link" size="sm" asChild className="p-0 h-auto text-red-500 hover:text-red-500/80 text-xs whitespace-nowrap" disabled={videoLink === "#"}>
                                 <a href={videoLink} target="_blank" rel="noopener noreferrer" aria-label={`Xem video ${video.title} trên YouTube`}>
                                   Xem trên YouTube <ExternalLink className="ml-1 h-3 w-3" />
                                 </a>
@@ -164,7 +199,7 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
               )}
             </div>
             
-            {(!hasProductFindings && !hasVideoFindings && !data.overallSummary && data.analyzedProductName === data.originalSearchQuery) && (
+            {(!hasProductFindings && !hasVideoFindings && !data.overallSummary && (!data.analyzedProductName || data.analyzedProductName === data.originalSearchQuery)) && (
                 <div className="flex flex-col items-center text-muted-foreground p-6 justify-center text-center border border-dashed rounded-md">
                     <Info className="mr-2 h-10 w-10 mb-3 text-primary/70" />
                     <p className="font-medium text-lg">
@@ -175,18 +210,19 @@ export function WebProductInsightsSection({ data, isLoading }: WebProductInsight
             )}
 
           </>
-        ) : (
+        ) : ( // This case is when data is null and not loading (e.g., after an error or initial state)
            <div className="flex flex-col items-center text-muted-foreground p-6 justify-center text-center border border-dashed rounded-md">
                 <Info className="mr-2 h-10 w-10 mb-3 text-primary/70" />
                 <p className="font-medium text-lg">
-                    Không có dữ liệu để hiển thị.
+                    Chưa có dữ liệu để hiển thị.
                 </p>
-                {data?.originalSearchQuery && <p className="text-xs mt-2">Từ khóa đã tìm: "{data.originalSearchQuery}"</p>}
+                {data?.originalSearchQuery ? 
+                    <p className="text-xs mt-2">Từ khóa đã tìm: "{data.originalSearchQuery}"</p>
+                    : <p className="text-xs mt-2">Vui lòng nhập từ khóa để tìm kiếm.</p>
+                }
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-
-    
